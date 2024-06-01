@@ -1,0 +1,39 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <h1 class="display-5">Hello!</h1>
+    <p class="fs-4">Welcome to Yet Another NextFlow User Interface AKA "yanfui"</p>
+</div>
+<div class="p-5 mb-4 bg-light rounded-3">
+    <h1 class="display-5">System Information</h1>
+    <p><strong>CPU Model:</strong> {{ info.cpu_model }}</p>
+    <p><strong>Number of CPUs:</strong> {{ info.cpu_count }}</p>
+    <p><strong>Total RAM:</strong> {{ info.ram_total }} GB</p>
+    <p><strong>Disk Usage:</strong> Used {{ info.disk_used }} GB / Total {{ info.disk_total }} GB</p>
+    <p><strong>Disk Free:</strong> {{ info.disk_free }} GB</p>
+    <p><strong>Operating System:</strong> {{ info.os_name }} (Version {{ info.os_version }})</p>
+    <h2 class="mt-4">Software Versions</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Software</th>
+                <th>Status</th>
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for software, details in software_versions.items() %}
+            <tr>
+                <td>{{ software }}</td>
+                <td>{{ details.Status }}</td>
+                <td>{{ details.Version }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
