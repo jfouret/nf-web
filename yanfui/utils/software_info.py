@@ -15,21 +15,20 @@ def get_software_versions():
         'Java': "java --version | head -n 1",
         'Docker': "docker info | grep '^ Version'",
         'Apptainer': "apptainer version",
-        'Singularity': "singularity version"
+        'Singularity': "singularity version",
+        'Git': "git version"
     }
 
     for software, command in commands.items():
         output = get_command_output(command)
         if output:
             # Parse the output to extract the version
-            if software == 'Docker':
+            if software in ['Docker', "Nextflow", "Git"]:
                 version = output.split(' ')[-1].strip()
             elif software == 'AWS CLI':
                 version = output.split(' ')[0].split("/")[1].strip()
             elif software == 'Java':
                 version = output.split(' ')[1].strip()
-            elif software == 'Nextflow':
-                version = output.split(' ')[-1].strip()
             else:
                 version = output.strip()
             versions[software] = {'Status': 'Available', 'Version': version}
