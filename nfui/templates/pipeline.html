@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Pipeline {{ pipeline.organization }}/{{ pipeline.project }}{% endblock %}
+
+{% block content %}
+<div id="app" class="container mt-4">
+  <h2>Pipeline: {{ pipeline.organization }}/{{ pipeline.project }}</h2>
+
+  <p><strong>Description:</strong> {{ pipeline.description }}</p>
+  <p><strong>Nextflow Version:</strong> {{ pipeline.nextflowVersion }}</p>
+  <p><strong>Current Revision:</strong> {{ pipeline.head }}</p>
+
+  {% if readme %}
+  <p>
+    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReadMe" aria-expanded="false" aria-controls="collapseReadMe">
+      Read Me &#x25BC
+    </button>
+  </p>
+  <div class="collapse" id="collapseReadMe">
+    <div class="card card-body">
+      {{readme|safe}}
+    </div>
+  </div>
+  
+  {% endif %}
+
+<!-- Form to build run config -->
+<h3>Create Run Configuration</h3>
+
+<form @submit.prevent="submitForm">
+  <div class="form-group mb-2">
+    <label for="runName">Run Name:</label>
+    <input type="text" class="form-control" id="runName" v-model="runName" required>
+  </div>
+  <div class="form-group mb-2">
+    <label for="nextflowVersion">Nextflow Version:</label>
+    <input type="text" class="form-control" id="nextflowVersion" v-model="nextflowVersion" required>
+  </div>
+  <div class="form-group mb-2">
+    <label for="configFile">Select Config File:</label>
+    <select class="form-control" id="configFile" v-model="selectedConfig">
+      <option value="">None</option>
+      <option v-for="config in configFiles" :value="config.filename">{{ config.name }}</option>
+    </select>
+  </div>
+  <!-- Form generated from schema using Jinja -->
+  <h4>Parameters</h4>
+  <div class="accordion" id="accordionParams">
+    {% for key, group in schema.definitions.items() %}
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="heading{{key}}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGroup{{key}}" aria-expanded="false" aria-controls="collapseGroup{{key}}">
+            {{ group.title or key }}
+          </button>
+        </h2>
+        <div id="collapseGroup{{key}}" class="accordion-collapse collapse" aria-labelledby="headin{{key}}" data-bs-parent="#accordionParams">
+          <div class="accordion-body">
+            {% if group.description %}<p>{{ group.description }}</p>{% endif %}
+            {% for property, details in group.properties.items() %}
+              <label for="{{ property }}" class="form-label"><span style="font-family: mono;" class="badge bg-secondary">{{ property }}</span></label>
+              {% if details.type == 'boolean' %}
+                <div><input 
+                  type="checkbox" 
+                  class="form-check-input" 
+                  id="{{ property }}" 
+                  aria-describedby="{{ property }}HelpBlock"
+                  {% if property in group.required %}required{% endif %}
+                  {% if details.default is true %}checked{% endif %}
+                ></div>
+              {% else %}
+                <div><input 
+                  type="{% if details.type == 'string' %}text{% elif details.type == 'number' or details.type == 'integer' %}number{% endif %}" 
+                  class="form-control"
+                  id="{{ property }}" 
+                  aria-describedby="{{ property }}HelpBlock"
+                  {% if property in group.required %}required{% endif %}
+                  {% if details.default is not none %}value="{{ details.default }}"{% endif %}
+                ></div>
+              {% endif %}
+              <div id="{{ property }}HelpBlock" class="form-text">
+                {% if details.description %}{{ details.description }}{% endif %}     
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <br>
+  <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+  const { createApp } = Vue;
+  createApp({
+    data() {
+      return {
+        runName: '',
+        nextflowVersion: '',
+        selectedConfig: '',
+        configFiles: {{ config_files | tojson }},
+        parameters: {}
+      };
+    },
+    methods: {
+      submitForm() {
+        // Handle form submission logic here
+        console.log('Form submitted with:', this.runName, this.nextflowVersion, this.selectedConfig, this.parameters);
+      }
+    }
+  }).mount('#app');
+</script>
+
+{% endblock %}
+

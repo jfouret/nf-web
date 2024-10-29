@@ -1,4 +1,4 @@
-from yanfui import create_app
+from nfui import create_app
 
 app = create_app()
 

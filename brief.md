@@ -48,10 +48,18 @@ Develop a Flask web application to manage local Nextflow pipelines and runs. The
 #### 5. **Pipeline Page** [TODO]
 - **Purpose**: To summarize and manage a specific pipeline.
 - **Requirements**:
-  - Display a summary of the selected pipeline.
-  - Eventually show the README page of the pipeline.
+  - Have a button from the "Pipelines" page to go a a specific pipeline page. 
+  - Display a summary of the selected pipeline from the manifest in the Nextflow.config.
+  - Eventually show the README page of the pipeline. (README.md)
   - Allow users to select a different tag, resulting in a git checkout on the backend and page update.
-  - Provide a form based on the JSON schema specified in the `nextflow_schema.json` located in the pipeline directory, using a Vue.js module that can generate forms from this file.
+  - Have a interface to build a run config with this pipeline with:
+    - A space for config selection that will be used later.
+    - A space to select Nextflow version.
+    - A space to choose a name.
+    - Provide a form based on the JSON schema specified in the `nextflow_schema.json` located in the pipeline directory, using a Vue.js module that can generate forms from this file.
+    - Make a create button that will build a run config in `{{root_dir}}/run_configs` (see below):
+      - Create a params file (json) and copy the config file.
+      - create a run.yml that contains nextflow version, date of creation, name, pipeline name a revision (tag if any, or else commit head). 
 
 #### 6. **Configs Page** [TODO]
 - **Purpose**: Allow users to upload, view, and manage configuration files in `{{root_dir}}/configs`.

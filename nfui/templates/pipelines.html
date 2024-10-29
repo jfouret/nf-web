@@ -73,7 +73,11 @@ createApp({
                     throw new Error('Something went wrong on API server!');
                 }
             })
+        },
+        configure(pipeline) {
+            window.location.href = `/pipeline/${pipeline.organization}/${pipeline.project}`;
         }
+
     }
 }).mount('#app');
 </script>
