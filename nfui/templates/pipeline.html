@@ -40,7 +40,7 @@
     <label for="configFile">Select Config File:</label>
     <select class="form-control" id="configFile" v-model="selectedConfig">
       <option value="">None</option>
-      <option v-for="config in configFiles" :value="config.filename">{{ config.name }}</option>
+      <option v-for="config in configFiles" :value="config.filename">{{ '{{ config.name }}' }}</option>
     </select>
   </div>
   <!-- Form generated from schema using Jinja -->

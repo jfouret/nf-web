@@ -21,11 +21,10 @@
             </thead>
             <tbody>
                 <tr v-for="pipeline in pipelines">
-                    <td><button @click="configure(pipeline)"><i class="bi bi-rocket-takeoff"></i></button></td>
+                    <td><button type="button" class="btn btn-primary" @click="configure(pipeline)"><i class="bi bi-rocket-takeoff"></i></button></td>
                     <td>{{ '{{ pipeline.project }}' }}</td>
                     <td>{{ '{{ pipeline.organization }}' }}</td>
                     <td>{{ '{{ pipeline.description }}' }}</td>
-                    <td>{{ '{{ pipeline.nextflowVersion }}' }}</td>
                     <td>{{ '{{ pipeline.head }}' }}</td>
                     <td>
                         <select class="form-control form-control-sm" v-model="pipeline.tag" @change="checkout(pipeline, pipeline.tag, 'tag')">
