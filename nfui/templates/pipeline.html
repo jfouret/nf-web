@@ -92,52 +92,101 @@
     <button type="submit" class="btn btn-primary">Submit</button>
   </form>
 
-  <script>
-    const { createApp } = Vue;
-    createApp({
-      data() {
-        return {
-          runName: '',
-          nextflowVersion: '',
-          selectedConfig: '',
-          configFiles: {{ config_files | tojson }}
-        };
-      },
-      methods: {
-        submitForm() {
-          this.missingParams = [];
-          this.parameters = {}; // Reset parameters
+  <!-- Success Modal -->
+  <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Success</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="redirectToRunConfigs"></button>
+        </div>
+        <div class="modal-body">
+          Run configuration created successfully.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" @click="redirectToRunConfigs">Go to Run Configs</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-          // Iterate over schema properties and populate parameters
-          {% for key, group in schema.definitions.items() %}
-            {% for property, details in group.properties.items() %}
-              const {{property}}_value = document.getElementById('_{{ property }}').value;
-              if ({{property}}_value !== '') {
-                {% if details.type == "boolean" %}
-                  if ({{property}}_value == "on"){
-                    this.parameters['{{ property }}'] = true;
-                  } else {
-                    this.parameters['{{ property }}'] = false;
-                  }
-                {% elif details.type == "integer" %}
-                  this.parameters['{{ property }}'] = parseInt({{property}}_value);
-                {% elif details.type == "number" %}
-                  this.parameters['{{ property }}'] = Number({{property}}_value);
-                {% else %}
-                  this.parameters['{{ property }}'] = {{property}}_value;
-                {% endif %}
-              }
-            {% endfor %}
+<script>
+  const { createApp } = Vue;
+  createApp({
+    data() {
+      return {
+        runName: '',
+        nextflowVersion: '',
+        selectedConfig: '',
+        configFiles: {{ config_files | tojson }}
+      };
+    },
+    methods: {
+      submitForm() {
+        this.missingParams = [];
+        this.parameters = {}; // Reset parameters
+
+        // Iterate over schema properties and populate parameters
+        {% for key, group in schema.definitions.items() %}
+          {% for property, details in group.properties.items() %}
+            const {{property}}_value = document.getElementById('_{{ property }}').value;
+            if ({{property}}_value !== '') {
+              {% if details.type == "boolean" %}
+                if ({{property}}_value == "on"){
+                  this.parameters['{{ property }}'] = true;
+                } else {
+                  this.parameters['{{ property }}'] = false;
+                }
+              {% elif details.type == "integer" %}
+                this.parameters['{{ property }}'] = parseInt({{property}}_value);
+              {% elif details.type == "number" %}
+                this.parameters['{{ property }}'] = Number({{property}}_value);
+              {% else %}
+                this.parameters['{{ property }}'] = {{property}}_value;
+              {% endif %}
+            }
           {% endfor %}
+        {% endfor %}
 
-          if (this.missingParams.length > 0) {
-            new bootstrap.Modal(document.getElementById('missingParamsModal')).show();
-          } else {
-            console.log('Form submitted with:', this.runName, this.nextflowVersion, this.selectedConfig, this.parameters);
+        // Prepare data to send
+        const postData = {
+          run_name: this.runName,
+          nextflow_version: this.nextflowVersion,
+          selected_config: this.selectedConfig,
+          parameters: this.parameters,
+          organization: '{{ pipeline.organization }}',
+          project: '{{ pipeline.project }}'
+        };
+
+        // Send data to the API
+        fetch('/api/create_run_config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            // Show success modal
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+          } else if (data.error) {
+            alert('Error: ' + data.error);
           }
-        }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while creating the run configuration.');
+        });
+      },
+      redirectToRunConfigs() {
+        window.location.href = '/run_configs';
       }
-    }).mount('#app');
-  </script>
+    }
+  }).mount('#app');
+</script>
 
 {% endblock %}

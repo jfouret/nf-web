@@ -56,12 +56,12 @@ Develop a Flask web application to manage local Nextflow pipelines and runs. The
     - A space for config selection that will be used later.
     - A space to select Nextflow version.
     - A space to choose a name.
-    - Provide a form based on the JSON schema specified in the `nextflow_schema.json` located in the pipeline directory, using a Vue.js module that can generate forms from this file.
+    - Provide a form based on the JSON schema specified in the `nextflow_schema.json` located in the pipeline directory.
     - Make a create button that will build a run config in `{{root_dir}}/run_configs` (see below):
       - Create a params file (json) and copy the config file.
       - create a run.yml that contains nextflow version, date of creation, name, pipeline name a revision (tag if any, or else commit head). 
 
-#### 6. **Configs Page** [TODO]
+#### 6. **Configs Page** [DONE]
 - **Purpose**: Allow users to upload, view, and manage configuration files in `{{root_dir}}/configs`.
 - **Requirements**:
   - config files are stored in `{{root_dir}}/configs`
@@ -77,7 +77,7 @@ Develop a Flask web application to manage local Nextflow pipelines and runs. The
   - The table is built by reading all file matching `{{root_dir}}/configs/(.*).meta.yml` where the captured filname exists.
   - **Create form**: A form before the table, on the single line with the field for the name of the config, the file name and a button create. upon creation it redirects to the edit page with an empty file.
 
-#### 6 bis **Config Edit** [TODO]
+#### 6 bis **Config Edit** [DONE]
 - **Purpose**: To edit one Nextflow configuration files.
 - **Requirements**:
   - filename of config file is given in url as field option
@@ -87,14 +87,19 @@ Develop a Flask web application to manage local Nextflow pipelines and runs. The
 - **Purpose**: To list and manage run configurations.
 - **Requirements**:
   - Display a table with the following columns:
-    - **Pipeline Name**: Name of the pipeline
+    - **Pipeline Name**: Name of the pipeline (with organization)
     - **Release Tag**: Release tag of the pipeline
     - **Nextflow Config**: Optional Nextflow configuration file
-    - **Parameters File**: JSON file with its content shown
+    - **Config file**
   - Allow users to create and manage run configurations, specifying the pipeline name, release tag, optional Nextflow config, and required parameters file.
   - Store run configurations in `{{root_dir}}/run_configs` as:
-    - `params.json`: Contains parameters for the run.
-    - `run.json`: Contains a link to the Nextflow config file (used with `-c`) in `{{root_dir}}/configs`, the pipeline, and the release tag.
+    - list.csv shall contains a list with <organization>,<pipeline_name>,<run_name>
+    - directory pattern is <organization>/<pipeline_name>/<run_name>
+    - `params.yml`: Contains parameters for the run.
+    - `run.json`: Hold other infos for this run config
+      - pipeline release tag
+      - nextflow config name
+      - nextflow version
 
 #### 8. **Runs Page** [TODO]
 - **Purpose**: To list and manage runs based on run configurations.

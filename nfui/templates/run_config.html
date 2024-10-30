@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Run Configuration Details{% endblock %}
+
+{% block content %}
+<h2>Run Configuration: {{ run_info.run_name }}</h2>
+<p><strong>Pipeline:</strong> {{ run_info.organization }}/{{ run_info.pipeline_name }}</p>
+<p><strong>Revision:</strong> {{ run_info.revision }}</p>
+<p><strong>Nextflow Version:</strong> {{ run_info.nextflow_version }}</p>
+<p><strong>Date Created:</strong> {{ run_info.date_created }}</p>
+{% if run_info.config_file %}
+<p><strong>Config File:</strong> {{ run_info.config_file }}</p>
+<div class="card">
+  <div class="card-header">Configuration File Content</div>
+  <div class="card-body">
+    <pre>{{ config_content }}</pre>
+  </div>
+</div>
+{% else %}
+<p><strong>Config File:</strong> None</p>
+{% endif %}
+
+<h3>Parameters</h3>
+<div class="card">
+  <div class="card-body">
+    <pre>{{ params | to_nice_json }}</pre>
+  </div>
+</div>
+
+<a href="{{ url_for('run_configs') }}" class="btn btn-secondary mt-3">Back to Run Configs</a>
+
+{% endblock %}
