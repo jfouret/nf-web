@@ -13,7 +13,6 @@
                     <th>Pipeline Name</th>
                     <th>Organization</th>
                     <th>Description</th>
-                    <th>Nextflow Version</th>
                     <th>Head</th>
                     <th>Tags</th>
                     <th>Branch</th>
@@ -25,7 +24,7 @@
                     <td>{{ '{{ pipeline.project }}' }}</td>
                     <td>{{ '{{ pipeline.organization }}' }}</td>
                     <td>{{ '{{ pipeline.description }}' }}</td>
-                    <td>{{ '{{ pipeline.head }}' }}</td>
+                    <td><code>{{ '{{ pipeline.head.sha.substring(1, 7) }}' }}</code></td>
                     <td>
                         <select class="form-control form-control-sm" v-model="pipeline.tag" @change="checkout(pipeline, pipeline.tag, 'tag')">
                             <option class="font-monospace" v-for="tag in pipeline.tags" :value="tag">{{ '{{ tag }}' }}</eq-option>

@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from git import Repo
 import os
-from ..utils.git import checkout_git
+from ..utils.git import fetch_repo_details, checkout_git
 
 def init_app(app):
     @app.route('/import_pipeline', methods=['GET', 'POST'])
@@ -24,16 +24,8 @@ def init_app(app):
                 os.makedirs(pipelines_path)
 
             organization, pipeline_name = repo_data
-            try:
-                checkout_git("main", organization, pipeline_name, pipelines_path)
-            except Exception as error1:
-                try:
-                    checkout_git("master", organization, pipeline_name, pipelines_path)
-                except  Exception as error2:
-                    flash('Error checking out repository.')
-                    print("Error checking out repository.")
-                    print(error1)
-                    print(error2)
-                    return redirect(url_for('import_pipeline'))
+
+            info = fetch_repo_details(organization, pipeline_name, pipelines_path)
+            checkout_git(info["head"]["sha"], organization, pipeline_name, pipelines_path)
 
         return render_template('import_pipeline.html')

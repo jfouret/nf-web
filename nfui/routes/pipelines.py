@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, session, flash
 import os
 from ..utils.git import fetch_repo_details, checkout_git
+from ..utils.nf import parse_nf_manifest
 
 def init_app(app):
     @app.route('/pipelines')    
@@ -20,5 +21,10 @@ def init_app(app):
                     repo_path = os.path.join(org_path, repo)
                     if not os.path.isdir(repo_path):
                         continue
-                    pipelines.append(fetch_repo_details(org, repo, pipelines_path))
+                    info = fetch_repo_details(org, repo, pipelines_path)
+                    res = parse_nf_manifest(os.path.join(repo_path,info["head"]["sha"],"nextflow.config"))
+                    info["nextflowVersion"] = res["nextflowVersion"]
+                    info["description"] = res["description"]
+                    pipelines.append(info)
+
         return render_template('pipelines.html', pipelines=pipelines)

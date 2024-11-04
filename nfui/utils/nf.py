@@ -18,7 +18,7 @@ def parse_nf_manifest(file_path):
       if match:
         nextflowVersion = match.group(1)
         continue
-      match = re.match(r"^\s*manifest\s*\{\s*$")
+      match = re.match(r"^\s*manifest\s*\{\s*$", line)
       if match:
         within_manifest_scope = True
         open_brackets = 1
@@ -39,8 +39,8 @@ def parse_nf_manifest(file_path):
       if description != "" and nextflowVersion != "":
         break
   results = {
-    'description': description,
-    'nextflowVersion': nextflowVersion
+    'description': description.strip('"'),
+    'nextflowVersion': nextflowVersion.strip('"')
   }
   return results
 
