@@ -8,4 +8,10 @@
 </div>
 
 {% include 'file_browser.html' %}
+
+<script type="module">
+    import createFileBrowser from "{{ url_for('static', filename='js/file_browser.js') }}";
+    const { createApp } = Vue;
+    createApp(createFileBrowser()).mount('#file-browser');
+</script>
 {% endblock %}

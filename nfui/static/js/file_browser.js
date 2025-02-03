@@ -1,7 +1,12 @@
-const { createApp } = Vue;
+const createFileBrowser = (options = {}) => {
+    const {
+        showDownloadButton = true,
+        onFileSelect = null,
+        showContentViewer = true
+    } = options;
 
-const createFileBrowser = (options = {}) => ({
-    delimiters: ['${', '}'],
+    return {
+        delimiters: ['${', '}'],
     data() {
         return {
             currentBackend: '',
@@ -15,7 +20,9 @@ const createFileBrowser = (options = {}) => ({
             selectedMetadata: ['size'],
             showTime: false,
             sortBy: 'name',
-            sortDirection: 'asc'
+            sortDirection: 'asc',
+            showDownloadButton,
+            showContentViewer
         };
     },
     computed: {
@@ -114,6 +121,15 @@ const createFileBrowser = (options = {}) => ({
             }
         },
         async viewFile(file) {
+            if (onFileSelect) {
+                onFileSelect(file);
+                return;
+            }
+
+            if (!this.showContentViewer) {
+                return;
+            }
+
             this.selectedFile = file;
             this.fileContent = null;
             
@@ -184,7 +200,8 @@ const createFileBrowser = (options = {}) => ({
             this.currentPage = 1;
         }
     }
-});
+    }
+};
 
-// Create and mount the app with default options
-createApp(createFileBrowser()).mount('#app');
+// Export the component factory
+export default createFileBrowser;

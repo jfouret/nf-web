@@ -1,5 +1,5 @@
 
-<div id="app" class="container">
+<div id="file-browser" class="container">
     <div class="row">
         <!-- Storage Backend Selection -->
         <div class="col-3">
@@ -141,8 +141,8 @@
                                             <span v-if="item.modified">${ formatDate(item.modified) }</span>
                                         </td>
                                         <td class="text-end">
-                                            <a v-if="item.type !== 'directory'" 
-                                               :href="'/api/storage/download?storage=' + currentBackend + '&path=' + currentPath + '/' + item.name" 
+                                            <a v-if="showDownloadButton && item.type !== 'directory'" 
+                                               :href="'/api/storage/download?storage=' + currentBackend + '&path=' + currentPath + '/' + item.name"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-download"></i>
                                             </a>
@@ -154,7 +154,7 @@
                     </div>
 
                     <!-- Content Viewer -->
-                    <div v-if="selectedFile" class="card">
+                    <div v-if="selectedFile && showContentViewer" class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">${ selectedFile.name }</h5>
                             <button type="button" class="btn-close" @click="selectedFile = null"></button>
@@ -173,4 +173,3 @@
         </div>
     </div>
 </div>
-<script src="{{ url_for('static', filename='js/file_browser.js') }}"></script>
