@@ -26,6 +26,26 @@ class Config:
     CACHE_DEFAULT_TIMEOUT = 3600  # Cache timeout in seconds
     CACHE_THRESHOLD = 1000  # Maximum number of items in the cache
     
+    # Storage configuration
+    STORAGE_BACKENDS = {
+        'local_data': {
+            'type': 'server',
+            'root': os.path.join(ROOT_DIR, 'data'),
+            'description': 'Local Data Files'
+        },
+        'local_configs': {
+            'type': 'server',
+            'root': os.path.join(ROOT_DIR, 'configs'),
+            'description': 'Configuration Files'
+        },
+        'aws_data': {
+            'type': 's3',
+            'bucket_patterns': ['.*'],
+            'region': "eu-west-3",
+            'description': 'AWS Data Storage'
+        }
+    }
+    
     MASTER_PASSWORD = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
     print(f'Password: {MASTER_PASSWORD}')
     print(f'GitHub Token: {GITHUB_TOKEN}')
