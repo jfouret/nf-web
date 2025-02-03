@@ -141,11 +141,18 @@
                                             <span v-if="item.modified">${ formatDate(item.modified) }</span>
                                         </td>
                                         <td class="text-end">
-                                            <a v-if="showDownloadButton && item.type !== 'directory'" 
-                                               :href="'/api/storage/download?storage=' + currentBackend + '&path=' + currentPath + '/' + item.name"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-download"></i>
-                                            </a>
+                                            <div class="btn-group">
+                                                <a v-if="showDownloadButton && item.type !== 'directory'" 
+                                                   :href="'/api/storage/download?storage=' + currentBackend + '&path=' + currentPath + '/' + item.name"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <button v-if="showSelectButton && (item.type === 'directory' || item.type === 'file')"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        @click="selectItem(item)">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>

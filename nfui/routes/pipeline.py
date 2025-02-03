@@ -9,11 +9,15 @@ from ..utils.git_repo import GitRepo
 from ..utils.pipeline import Pipeline
 from ..utils.file_utils import list_config_files
 from .. import models
+from ..utils.storage import StorageManager
 from markdown import markdown
 
 def init_app(app):
+  storage_manager = StorageManager(app.config)
+
   @app.route('/pipeline/<organization>/<project>', methods=['GET', 'POST'])
   def pipeline_page(organization, project):
+    
     if not session.get('logged_in'):
       return redirect(url_for('login'))
 
@@ -137,4 +141,4 @@ def init_app(app):
       return redirect(url_for('run_configs'))
 
     # Render the template with data
-    return render_template('pipeline.html', pipeline=pipeline_details, schema=schema, readme=markdown(readme_content), config_files=config_files)
+    return render_template('pipeline.html', pipeline=pipeline_details, schema=schema, readme=markdown(readme_content), config_files=config_files, backends=storage_manager.list_backends())

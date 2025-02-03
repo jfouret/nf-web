@@ -13,7 +13,8 @@ class ServerFile(BaseFile):
         self.root.mkdir(parents=True, exist_ok=True)
 
     def get_uri(self, path: str) -> str:
-        return f"file://{self.root}/{path}"
+        abs_path = self.root / path
+        return f"file:/{abs_path}"
 
     def list(self, path: str = "") -> List[Dict]:
         full_path = self.root / path
@@ -21,9 +22,10 @@ class ServerFile(BaseFile):
         
         for entry in os.scandir(full_path):
             stat = entry.stat()
+            entry_path = f"{path}/{entry.name}" if path else entry.name
             items.append({
                 "name": entry.name,
-                "uri": self.get_uri(f"{path}/{entry.name}"),
+                "uri": self.get_uri(f"{entry_path}"),
                 "type": "directory" if entry.is_dir() else "file",
                 "created": datetime.fromtimestamp(stat.st_ctime),
                 "modified": datetime.fromtimestamp(stat.st_mtime),

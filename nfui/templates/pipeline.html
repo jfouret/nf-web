@@ -3,6 +3,21 @@
 {% block title %}Pipeline {{ pipeline.organization }}/{{ pipeline.project }}{% endblock %}
 
 {% block content %}
+<!-- File Browser Modal -->
+<div class="modal fade" id="fileBrowserModal" tabindex="-1" aria-labelledby="fileBrowserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="fileBrowserModalLabel">Select File</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% include 'file_browser.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="app" class="container mt-4">
   <h2>Pipeline: {{ pipeline.organization }}/{{ pipeline.project }}</h2>
 
@@ -70,14 +85,28 @@
                     {% if details.default is true %}checked{% endif %}
                   ></div>
                 {% else %}
-                  <div><input 
-                    type="{% if details.type == 'string' %}text{% elif details.type == 'number' or details.type == 'integer' %}number{% endif %}" 
-                    class="form-control"
-                    id="_{{ property }}" 
-                    aria-describedby="{{ property }}HelpBlock"
-                    {% if property in group.required %}required{% endif %}
-                    {% if details.default is not none %}value="{{ details.default }}"{% endif %}
-                  ></div>
+                  <div class="{% if details.format in ['file-path', 'directory-path'] %}input-group{% endif %}">
+                    <input 
+                      type="{% if details.type == 'string' %}text{% elif details.type == 'number' or details.type == 'integer' %}number{% endif %}" 
+                      class="form-control"
+                      id="_{{ property }}" 
+                      aria-describedby="{{ property }}HelpBlock"
+                      {% if property in group.required %}required{% endif %}
+                      {% if details.default is not none %}value="{{ details.default }}"{% endif %}
+                    >
+                    {% if details.format in ['file-path', 'directory-path'] %}
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-secondary" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#fileBrowserModal"
+                        data-target-input="_{{ property }}"
+                        data-input-type="{{ details.format }}"
+                      >
+                        Browse
+                      </button>
+                    {% endif %}
+                  </div>
                 {% endif %}
                 <div id="{{ property }}HelpBlock" class="form-text">
                   {% if details.description %}{{ details.description }}{% endif %}     
@@ -111,9 +140,12 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import createFileBrowser from "{{ url_for('static', filename='js/file_browser.js') }}";
   const { createApp } = Vue;
-  createApp({
+  
+  // Create main Vue app
+  const mainApp = createApp({
     data() {
       return {
         runName: '',
@@ -186,7 +218,42 @@
         window.location.href = '/run_configs';
       }
     }
-  }).mount('#app');
+  });
+
+  // Mount main app
+  mainApp.mount('#app');
+
+  // Initialize file browser when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const fileBrowserModal = document.getElementById('fileBrowserModal');
+    const modal = new bootstrap.Modal(fileBrowserModal);
+    let currentInputId = null;
+    let currentInputType = null;
+
+    // Create file browser instance
+    const fileBrowserConfig = createFileBrowser({
+      showDownloadButton: false,
+      showContentViewer: false,
+      showSelectButton: true,
+      onFileSelect: (file) => {
+        if (currentInputType === 'file-path' && file.type === 'directory') {
+          return; // Don't allow selecting directories for file inputs
+        }
+        document.getElementById(currentInputId).value = file.uri;
+        modal.hide();
+      }
+    });
+    
+    const fileBrowserApp = createApp(fileBrowserConfig);
+    fileBrowserApp.mount('#file-browser');
+
+    // Update current input when modal is shown
+    fileBrowserModal.addEventListener('show.bs.modal', (event) => {
+      const button = event.relatedTarget;
+      currentInputId = button.getAttribute('data-target-input');
+      currentInputType = button.getAttribute('data-input-type');
+    });
+  });
 </script>
 
 {% endblock %}
