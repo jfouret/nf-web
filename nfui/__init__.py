@@ -39,6 +39,7 @@ def create_app():
     from .routes.api.storage_backends import init_app as init_api__storage_backends
     from .routes.api.storage_list import init_app as init_api__storage_list
     from .routes.api.storage_download import init_app as init_api__storage_download
+    from .routes.api.cache import init_app as init_api__cache
 
     root_dir = app.config['ROOT_DIR']
     pipelines_path = os.path.join(root_dir, 'pipelines')
@@ -69,5 +70,6 @@ def create_app():
     init_api__storage_backends(app)
     init_api__storage_list(app)
     init_api__storage_download(app)
+    init_api__cache(app)
 
     return app

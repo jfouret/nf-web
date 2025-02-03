@@ -23,6 +23,23 @@
                 </li>
                 <!-- Add other navigation items here -->
             </ul>
+            <div class="dropdown me-2">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="cacheDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="cacheDropdown">
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="clearCache('github')">
+                            <i class="bi bi-github"></i> Clear GitHub Cache
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="clearCache('s3')">
+                            <i class="bi bi-cloud"></i> Clear S3 Cache
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i id="themeIcon" class="bi"></i>

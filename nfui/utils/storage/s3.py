@@ -2,6 +2,7 @@ import boto3
 from datetime import datetime
 from typing import Dict, List
 from .base import BaseFile
+from ..cache import s3_cache
 
 class S3File(BaseFile):
     def __init__(self, settings: Dict):
@@ -15,6 +16,7 @@ class S3File(BaseFile):
     def get_uri(self, path: str) -> str:
         return f"s3://{path}"
 
+    @s3_cache
     def list(self, path: str = "") -> List[Dict]:
         items = []
         
