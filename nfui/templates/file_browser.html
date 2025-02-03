@@ -1,0 +1,176 @@
+
+<div id="app" class="container">
+    <div class="row">
+        <!-- Storage Backend Selection -->
+        <div class="col-3">
+            <div class="list-group">
+                {% for backend in backends %}
+                <button type="button" 
+                        class="list-group-item list-group-item-action"
+                        :class="{ 'active': currentBackend === '{{ backend.name }}' }"
+                        @click="loadDirectory('{{ backend.name }}', '')">
+                    {{ backend.description }}
+                    <small class="d-block" :class="{ 'text-muted': currentBackend !== '{{ backend.name }}', 'text-white': currentBackend === '{{ backend.name }}' }">{{ backend.type }}</small>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- File Browser -->
+        <div class="col-9">
+            <div class="row">
+                <div class="col-12">
+                    <!-- Path Navigation -->
+                    <nav aria-label="breadcrumb" v-show="currentBackend">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#" @click.prevent="loadDirectory(currentBackend, '')">Root</a>
+                            </li>
+                            <li v-for="(part, index) in pathParts" class="breadcrumb-item">
+                                <a href="#" @click.prevent="loadDirectory(currentBackend, getPathUpTo(index))">${ part }</a>
+                            </li>
+                        </ol>
+                    </nav>
+
+                    <!-- File List -->
+                    <div class="card mb-3">
+                        <div class="card-header d-flex flex-row justify-content-between align-items-center">
+                            <h5 class="mb-0">Files</h5>
+                            <div class="d-flex flex-row gap-2 align-items-center">
+                                <select class="form-select form-select-sm" v-model="sortBy" @change="currentPage = 1" style="width: 180px;">
+                                    <option value="name">Sort by Name</option>
+                                    <option value="name-numeric">Sort by Name (Numeric)</option>
+                                    <option value="size">Sort by Size</option>
+                                    <option value="created">Sort by Created Date</option>
+                                    <option value="modified">Sort by Modified Date</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" @click="toggleSortDirection">
+                                    <i class="bi" :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Show Columns
+                                    </button>
+                                    <div class="dropdown-menu p-2" style="min-width: 200px;">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" v-model="selectedMetadata" value="size" id="sizeCheck">
+                                            <label class="form-check-label" for="sizeCheck">Size</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" v-model="selectedMetadata" value="created" id="createdCheck">
+                                            <label class="form-check-label" for="createdCheck">Created Date</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" v-model="selectedMetadata" value="modified" id="modifiedCheck">
+                                            <label class="form-check-label" for="modifiedCheck">Modified Date</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" @click="toggleTimeDisplay" v-if="selectedMetadata.includes('created') || selectedMetadata.includes('modified')">
+                                    <i class="bi" :class="showTime ? 'bi-clock-fill' : 'bi-clock'"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex flex-row justify-content-center align-items-center">
+                                <button class="btn btn-sm btn-outline-primary" @click="previousPage">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <select class="form-select form-select-sm" style="width: 80px;" v-model="currentPage" @change="changePage(currentPage)">
+                                    <option v-for="page in totalPages" :value="page">${ page }</option>
+                                </select>
+                                <span class="px-2"> of ${ totalPages } </span>
+                                <button class="btn btn-sm btn-outline-primary" @click="nextPage">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <select class="form-select form-select-sm" style="width: 80px;" v-model="pageSize" @change="changePageSize(pageSize)">
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th v-if="selectedMetadata.includes('size')">Size</th>
+                                        <th v-if="selectedMetadata.includes('created')">Created</th>
+                                        <th v-if="selectedMetadata.includes('modified')">Modified</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="loading">
+                                        <td colspan="5" class="text-center">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-else-if="!currentBackend">
+                                        <td colspan="5" class="text-center text-muted">
+                                            Select a storage backend to browse files
+                                        </td>
+                                    </tr>
+                                    <tr v-else-if="items.length === 0">
+                                        <td colspan="5" class="text-center text-muted">
+                                            This directory is empty
+                                        </td>
+                                    </tr>
+                                    <tr v-else v-for="item in paginatedItems">
+                                        <td>
+                                            <i :class="['bi', item.type === 'directory'? 'bi-folder' : 'bi-file-text', 'me-2']"></i>
+                                            <a v-if="item.type === 'directory'" 
+                                               href="#" 
+                                               @click.prevent="loadDirectory(currentBackend, currentPath + '/' + item.name)">
+                                                ${ item.name }
+                                            </a>
+                                            <a v-else 
+                                               href="#"
+                                               @click.prevent="viewFile(item)">
+                                                ${ item.name }
+                                            </a>
+                                        </td>
+                                        <td v-if="selectedMetadata.includes('size')">
+                                            <span>${ formatSize(item) }</span>
+                                        </td>
+                                        <td v-if="selectedMetadata.includes('created')">
+                                            <span v-if="item.created">${ formatDate(item.created) }</span>
+                                        </td>
+                                        <td v-if="selectedMetadata.includes('modified')">
+                                            <span v-if="item.modified">${ formatDate(item.modified) }</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a v-if="item.type !== 'directory'" 
+                                               :href="'/api/storage/download?storage=' + currentBackend + '&path=' + currentPath + '/' + item.name" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Content Viewer -->
+                    <div v-if="selectedFile" class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">${ selectedFile.name }</h5>
+                            <button type="button" class="btn-close" @click="selectedFile = null"></button>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="fileContent" style="white-space: pre-wrap; user-select: text;">${ fileContent }</div>
+                            <div v-else class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading content...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/file_browser.js') }}"></script>
