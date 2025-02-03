@@ -1,7 +1,9 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from git import Repo
 import os
-from ..utils.git import fetch_repo_details, checkout_git
+from ..utils.github_provider import GitHubProvider
+from ..utils.git_repo import GitRepo
+from ..utils.pipeline import Pipeline
+from .. import models
 
 def init_app(app):
   @app.route('/import_pipeline', methods=['GET', 'POST'])
@@ -24,8 +26,44 @@ def init_app(app):
         os.makedirs(pipelines_path)
 
       organization, pipeline_name = repo_data
+      
+      try:
+        # Check if pipeline already exists
+        existing_pipeline = models.Pipeline.query.filter_by(
+          org_name=organization,
+          project_name=pipeline_name
+        ).first()
+        
+        if existing_pipeline:
+          flash('Pipeline already imported.')
+          return redirect(url_for('pipelines'))
+        
+        # Initialize provider and repo
+        provider = GitHubProvider(organization, pipeline_name)
+        repo = GitRepo(provider, os.path.join(pipelines_path, f"{organization}_{pipeline_name}"))
+        pipeline = Pipeline(repo)
+        
+        # Get repository information and default branch
+        refs = pipeline.get_refs()
+        default_branch, branch_type = pipeline.get_default_branch()
 
-      info = fetch_repo_details(organization, pipeline_name, pipelines_path)
-      checkout_git(info["head"]["sha"], organization, pipeline_name, pipelines_path)
+        # Create new pipeline record
+        new_pipeline = models.Pipeline(
+          provider='github',
+          org_name=organization,
+          project_name=pipeline_name,
+          ref=default_branch,
+          ref_type=branch_type
+        )
+        
+        models.db.session.add(new_pipeline)
+        models.db.session.commit()
+        
+        flash('Pipeline imported successfully.')
+        return redirect(url_for('pipelines'))
+        
+      except Exception as e:
+        flash(f'Error importing pipeline: {str(e)}')
+        return redirect(url_for('import_pipeline'))
 
     return render_template('import_pipeline.html')

@@ -4,8 +4,11 @@ import json
 import yaml
 import shutil
 import time
-from ..utils.git import fetch_repo_details, checkout_git
+from ..utils.github_provider import GitHubProvider
+from ..utils.git_repo import GitRepo
+from ..utils.pipeline import Pipeline
 from ..utils.file_utils import list_config_files
+from .. import models
 from markdown import markdown
 
 def init_app(app):
@@ -17,29 +20,66 @@ def init_app(app):
     root_dir = app.config['ROOT_DIR']
     pipelines_path = os.path.join(root_dir, 'pipelines')
 
-    # Get the pipeline details
-    pipeline_details = fetch_repo_details(organization, project, pipelines_path)
+    # Get pipeline from database
+    db_pipeline = models.Pipeline.query.filter_by(
+      org_name=organization,
+      project_name=project
+    ).first_or_404()
 
-    # Get the path to the pipeline
-    pipeline_dir = os.path.join(pipelines_path, organization, project)
+    try:
+      # Initialize provider and repo
+      provider = GitHubProvider(organization, project)
+      repo = GitRepo(provider, os.path.join(pipelines_path, f"{organization}_{project}"))
+      pipeline = Pipeline(repo, db_pipeline.ref, db_pipeline.ref_type)
 
-    # Read the nextflow_schema.json
-    schema_path = os.path.join(pipeline_dir, 'nextflow_schema.json')
-    schema = None
-    if os.path.exists(schema_path):
-      with open(schema_path, 'r') as f:
-        schema = json.load(f)
-    else: 
-      flash("No schema found")
+      # Get repository information
+      refs = pipeline.git_repo.get_refs()
 
-    # Read README.md
-    readme_path = os.path.join(pipeline_dir, 'README.md')
-    readme_content = ''
-    if os.path.exists(readme_path):
-      with open(readme_path, 'r') as f:
-        readme_content = f.read()
-    else: 
-      flash("No schema found")
+      # Get pipeline details
+      pipeline_details = {
+        "id": db_pipeline.id,
+        "provider": db_pipeline.provider,
+        "org": db_pipeline.org_name,
+        "name": db_pipeline.project_name,
+        "ref": db_pipeline.ref,
+        "ref_type": db_pipeline.ref_type,
+        "refs": refs
+      }
+
+      # Check required files
+      try:
+        # Get schema
+        schema = json.loads(pipeline.fetch_schema())
+        if not schema:
+          raise ValueError("Invalid schema format")
+        
+        # Handle both "definitions" and "$defs" schema formats
+        if "definitions" not in schema.keys():
+          if "$defs" in schema.keys():
+            schema["definitions"] = schema["$defs"]
+          elif "defs" in schema.keys():
+            schema["definitions"] = schema["defs"]
+          else:
+            raise ValueError(f"No definitions/$defs/defs key found in schema")
+        
+        # Get config
+        config = pipeline.fetch_config()
+        if not config:
+          raise ValueError("No nextflow.config found")
+        
+        # Get README content (optional)
+        try:
+          readme_content = pipeline.git_repo.fetch_file("README.md", pipeline.commit_sha)
+        except Exception:
+          readme_content = ''
+          
+      except Exception as e:
+        flash(f'Error loading pipeline: {str(e)}')
+        return redirect(url_for('pipelines'))
+
+    except Exception as e:
+      flash(f'Error loading pipeline: {str(e)}')
+      return redirect(url_for('pipelines'))
 
     # Get list of configs (from root_dir/configs)
     configs_path = os.path.join(root_dir, 'configs')

@@ -2,12 +2,22 @@ from flask import Flask
 import os
 from dotenv import load_dotenv
 from .config import Config
+from .models import db, Pipeline
+from .utils.cache import init_cache
 import json
 
 def create_app():
     app = Flask('nfui')
     load_dotenv()
     app.config.from_object(Config)
+
+    # Initialize database
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+        
+    # Initialize cache
+    init_cache(app)
 
     @app.template_filter('to_nice_json')
     def to_nice_json(value):
