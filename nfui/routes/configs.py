@@ -1,55 +1,91 @@
 from flask import render_template, request, redirect, url_for, session, flash
-from ..utils.file_utils import list_config_files, save_config_file, delete_config_file, read_config_file
-import os
-import yaml
+from pathlib import Path
+from ..utils.workflow.config import ConfigManager
 
 def init_app(app):
-  @app.route('/configs', methods=['GET', 'POST'])
-  def configs():
-    if not session.get('logged_in'):
-      return redirect(url_for('login'))
-    
-    root_dir = app.config['ROOT_DIR']
-    configs_path = os.path.join(root_dir, 'configs')
-    if request.method == 'POST':
-      name = request.form['name']
-      filename = request.form['filename']
-      if not filename.endswith('.config'):
-        filename += '.config'
-      filepath = os.path.join(configs_path, filename)
-      meta_filepath = f'{filepath}.meta.yml'
-      with open(meta_filepath, 'w') as meta_file:
-        yaml.dump({'name': name, 'filename': filename}, meta_file)
-      with open(filepath, 'w') as file:
-        file.write('')
-      return redirect(url_for('edit_config', filename=filename))
+    config_manager = ConfigManager(app, at_app_creation=False)
 
-    config_files = list_config_files(configs_path)
-    return render_template('configs.html', config_files=config_files)
+    @app.route('/configs', methods=['GET', 'POST'])
+    def configs():
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            try:
+                config = config_manager.create_config(
+                    name=request.form['name'],
+                    filename=request.form['filename']
+                )
+                return redirect(url_for('edit_config', filename=config['filename']))
+            except ValueError as e:
+                flash(str(e), category='error')
+                return redirect(url_for('configs'))
 
-  @app.route('/configs/edit/<filename>', methods=['GET', 'POST'])
-  def edit_config(filename):
-    if not session.get('logged_in'):
-      return redirect(url_for('login'))
+        configs = config_manager.list_configs()
+        default_config = config_manager.get_default()
+        return render_template('configs.html', 
+                             config_files=configs,
+                             default_config=default_config,
+                             can_change_default=not config_manager.has_enforced_default)
 
-    root_dir = app.config['ROOT_DIR']
-    filepath = os.path.join(root_dir, 'configs', filename)
-    if request.method == 'POST':
-      content = request.form['content']
-      save_config_file(filepath, content)
-      flash('Configuration saved!', category='success')
-      return redirect(url_for('configs'))
+    @app.route('/configs/set_default/<filename>', methods=['POST'])
+    def set_default_config(filename):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        
+        if config_manager.has_enforced_default:
+            flash('Default config is enforced by system configuration!', category='error')
+            return redirect(url_for('configs'))
+        
+        try:
+            config_manager.set_default(filename)
+            flash('Default configuration updated!', category='success')
+        except FileNotFoundError:
+            flash('Configuration not found!', category='error')
+        
+        return redirect(url_for('configs'))
 
-    content = read_config_file(filepath)
-    return render_template('edit_config.html', filename=filename, content=content)
+    @app.route('/configs/edit/<filename>', methods=['GET', 'POST'])
+    def edit_config(filename):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
 
-  @app.route('/configs/delete/<filename>', methods=['POST'])
-  def delete_config(filename):
-    if not session.get('logged_in'):
-      return redirect(url_for('login'))
+        try:
+            config = config_manager.get_config(filename)
+            
+            if request.method == 'POST':
+                config_manager.update_config(filename, request.form['content'])
+                flash('Configuration saved!', category='success')
+                return redirect(url_for('configs'))
 
-    root_dir = app.config['ROOT_DIR']
-    filepath = os.path.join(root_dir, 'configs', filename)
-    delete_config_file(filepath)
-    flash('Configuration deleted!', category='success')
-    return redirect(url_for('configs'))
+            # Get config file content
+            with config_manager.get_config_path(filename).open('r') as f:
+                content = f.read()
+                
+            return render_template('edit_config.html', filename=filename, content=content)
+            
+        except FileNotFoundError:
+            flash('Configuration not found!', category='error')
+            return redirect(url_for('configs'))
+
+    @app.route('/configs/delete/<filename>', methods=['POST'])
+    def delete_config(filename):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+
+        try:
+            # Get config first to check if it's default
+            config = config_manager.get_config(filename)
+            if config['is_default']:
+                flash('Cannot delete the default configuration!', category='error')
+                return redirect(url_for('configs'))
+            
+            config_manager.delete_config(filename)
+            flash('Configuration deleted!', category='success')
+            
+        except FileNotFoundError:
+            flash('Configuration not found!', category='error')
+        except ValueError as e:
+            flash(str(e), category='error')
+            
+        return redirect(url_for('configs'))

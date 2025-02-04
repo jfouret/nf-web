@@ -1,6 +1,6 @@
 from github import Github
 from .git_provider import GitProvider
-from .cache import github_cache
+from ..cache import github_cache
 from typing import Dict
 from flask import current_app
 

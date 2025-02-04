@@ -3,6 +3,63 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+class Config(db.Model):
+    __tablename__ = 'configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    filename = db.Column(db.String(100), nullable=False, unique=True)
+    is_default = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @classmethod
+    def get_default(cls):
+        """Get the default config if one exists"""
+        return cls.query.filter_by(is_default=True).first()
+
+    @classmethod
+    def set_default(cls, config_id):
+        """Set a config as default and ensure no other config is default"""
+        cls.query.filter_by(is_default=True).update({'is_default': False})
+        cls.query.filter_by(id=config_id).update({'is_default': True})
+
+    @classmethod
+    def _create(cls, name: str, filename: str, is_default: bool = False) -> 'Config':
+        """Internal method for config creation
+        
+        Args:
+            name: Display name for the config
+            filename: Name of the config file
+            is_default: Whether this is the default config
+            
+        Returns:
+            Created Config instance
+        """
+        return cls(
+            name=name,
+            filename=filename,
+            is_default=is_default
+        )
+
+    def _to_dict(self) -> dict:
+        """Convert config to dictionary
+        
+        Returns:
+            Dictionary representation of config
+        """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'filename': self.filename,
+            'is_default': self.is_default,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
+        }
+
+    def __repr__(self):
+        return f'<Config {self.name}>'
+
 class Pipeline(db.Model):
     __tablename__ = 'pipelines'
     

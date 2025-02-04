@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for, session, flash
 import os
-from ..utils.github_provider import GitHubProvider
-from ..utils.git_repo import GitRepo
-from ..utils.pipeline import Pipeline
+from ..utils.workflow.github_provider import GitHubProvider
+from ..utils.workflow.git_repo import GitRepo
+from ..utils.workflow.pipeline import Pipeline
 from .. import models
 
 def init_app(app):

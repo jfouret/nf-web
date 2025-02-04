@@ -31,7 +31,7 @@ class GitRepo:
         elif ref_type == "tag":
             ref_type = "tags"
         elif ref_type not in ["branches", "tags"]:
-            raise ValueError(f"Invalid ref type: {ref_type}")
+            raise ValueError(f"Invalid ref type: {ref_type} for {self.provider.org}/{self.provider.project}")
         
         return self.refs[ref_type][ref]
         

@@ -46,6 +46,9 @@ class Config:
         }
     }
     
+    # Default config file - if set, this config will be enforced as default
+    DEFAULT_CONFIG = os.getenv('DEFAULT_CONFIG', None)
+    
     MASTER_PASSWORD = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
     print(f'Password: {MASTER_PASSWORD}')
     print(f'GitHub Token: {GITHUB_TOKEN}')

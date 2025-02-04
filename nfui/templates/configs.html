@@ -29,6 +29,7 @@
     <tr>
         <th>Name</th>
         <th>Filename</th>
+        <th>Status</th>
         <th>Edit</th>
         <th>Delete</th>
     </tr>
@@ -38,10 +39,22 @@
     <tr>
         <td>{{ config.name }}</td>
         <td>{{ config.filename }}</td>
+        <td>
+            {% if config.is_default %}
+                <span class="badge bg-success">Default</span>
+                {% if not can_change_default %}
+                    <span class="badge bg-warning" title="Enforced by system">Enforced</span>
+                {% endif %}
+            {% elif can_change_default %}
+                <form method="post" action="{{ url_for('set_default_config', config_id=config.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Set as Default</button>
+                </form>
+            {% endif %}
+        </td>
         <td><a href="{{ url_for('edit_config', filename=config.filename) }}"><button type="button" class="btn btn-primary">Edit</button></a></td>
         <td>
             <form method="post" action="{{ url_for('delete_config', filename=config.filename) }}">
-                <button type="submit" class="btn btn-primary">Delete</button>
+                <button type="submit" class="btn btn-primary" {% if config.is_default and not can_change_default %}disabled{% endif %}>Delete</button>
             </form>
         </td>
     </tr>
