@@ -14,7 +14,7 @@ class Config:
     os.makedirs(ROOT_DIR, exist_ok=True)
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(ROOT_DIR, "nfui.db")}'
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(ROOT_DIR, "liteflow.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # GitHub configuration

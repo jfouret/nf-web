@@ -1,4 +1,4 @@
-from nfui import create_app
+from liteflow import create_app
 
 app = create_app()
 

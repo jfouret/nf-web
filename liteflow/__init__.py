@@ -8,7 +8,7 @@ from .utils.cache import init_cache
 import json
 
 def create_app():
-    app = Flask('nfui')
+    app = Flask('liteflow')
     load_dotenv()
     app.config.from_object(Config)
 

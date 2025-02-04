@@ -1,5 +1,5 @@
 from flask import jsonify
-from nfui.utils.cache import clear_github_cache, clear_s3_cache
+from ...utils.cache import clear_github_cache, clear_s3_cache
 
 def init_app(app):
     @app.route('/api/cache/clear/github', methods=['POST'])
