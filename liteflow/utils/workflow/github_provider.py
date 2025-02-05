@@ -81,6 +81,10 @@ class GitHubProvider(GitProvider):
             lambda: self.repo.default_branch
         )
 
+    def get_raw_file_url(self, path: str, ref: str) -> str:
+        """Generate raw file URL for GitHub content"""
+        return f"https://raw.githubusercontent.com/{self.org}/{self.project}/{ref}/{path}"
+
     def get_file_content(self, path: str, ref: str) -> str:
         cache_key = f"github:file:{self.org}:{self.project}:{path}:{ref}"
         

@@ -32,9 +32,9 @@ def init_app(app):
         if ref_type == 'branch':
             commit_sha = refs["branches"][ref]
         elif ref_type == 'tag':
-            commit_sha = refs["branches"][ref]
+            commit_sha = refs["tags"][ref]
         elif ref_type == 'commit':
-            commit_sha = refs["branches"][ref]
+            commit_sha = refs["commits"][ref]
 
         # Get list of configs
         all_configs = config_manager.list_configs()
@@ -56,7 +56,6 @@ def init_app(app):
                 
             except Exception as e:
                 flash(f'Error creating run configuration: {str(e)}', category='error')
-                return redirect(url_for('pipeline_page', organization=organization, project=project))
 
         # Render the template with data
         schema = json.loads(repo.fetch_file('nextflow_schema.json', commit_sha))
@@ -82,7 +81,7 @@ def init_app(app):
             tags=refs["tags"],
             commits=refs["commits"],
             schema=schema,
-            readme=markdown(repo.fetch_file('README.md', commit_sha)),
+            readme=repo.get_readme_processed(commit_sha),
             config_files=all_configs,
             backends=storage_manager.list_backends(),
             ref=ref,

@@ -39,6 +39,7 @@ def create_app():
     from .routes.api.storage_list import init_app as init_api__storage_list
     from .routes.api.storage_download import init_app as init_api__storage_download
     from .routes.api.cache import init_app as init_api__cache
+    from .routes.api.create_run_config import init_app as init_api__create_run_config
 
     # Create required directories
     root_dir = Path(app.config['ROOT_DIR'])
@@ -65,5 +66,6 @@ def create_app():
     init_api__storage_list(app)
     init_api__storage_download(app)
     init_api__cache(app)
+    init_api__create_run_config(app)
 
     return app
