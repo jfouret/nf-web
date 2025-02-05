@@ -14,11 +14,17 @@ class GitProvider(ABC):
         Get repository refs
         Returns: {
             'branches': {name: sha, ...},
-            'tags': {name: sha, ...}
+            'tags': {name: sha, ...},
+            'commits': {short_sha: full_sha},
         }
         """
         pass
-        
+
+    @abstractmethod
+    def get_default_branch(self) -> str:
+        """Get default branch of the repository"""
+        pass
+
     @abstractmethod
     def get_file_content(self, path: str, ref: str) -> str:
         """Get file content at specific ref"""

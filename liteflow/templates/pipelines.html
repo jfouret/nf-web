@@ -10,29 +10,75 @@
             <thead class="thead-dark">
                 <tr>
                     <th></th>
-                    <th>Pipeline Name</th>
-                    <th>Organization</th>
+                    <th>
+                        Organization
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" v-model="filters.organization" placeholder="Filter...">
+                            <button class="btn btn-outline-secondary" @click="toggleSort('organization')">
+                                <i class="bi" :class="getSortIcon('organization')"></i>
+                            </button>
+                        </div>
+                    </th>
+                    <th>
+                        Name
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" v-model="filters.project" placeholder="Filter...">
+                            <button class="btn btn-outline-secondary" @click="toggleSort('project')">
+                                <i class="bi" :class="getSortIcon('project')"></i>
+                            </button>
+                        </div>
+                    </th>
                     <th>Description</th>
-                    <th>Head</th>
-                    <th>Tags</th>
-                    <th>Branch</th>
+                    <th>
+                        Commit
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" v-model="filters.commit" placeholder="Filter commits...">
+                        </div>
+                    </th>
+                    <th>
+                        Tag
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" v-model="filters.tag" placeholder="Filter tags...">
+                        </div>
+                    </th>
+                    <th>
+                        Branch
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" v-model="filters.branch" placeholder="Filter branches...">
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="pipeline in pipelines">
-                    <td><button type="button" class="btn btn-primary" @click="configure(pipeline)"><i class="bi bi-rocket-takeoff"></i></button></td>
-                    <td>{{ '{{ pipeline.project }}' }}</td>
-                    <td>{{ '{{ pipeline.organization }}' }}</td>
-                    <td>{{ '{{ pipeline.description }}' }}</td>
-                    <td><code>{{ '{{ pipeline.head.sha.substring(1, 7) }}' }}</code></td>
+                <tr v-for="pipeline in filteredAndSortedPipelines" :key="pipeline.organization + '/' + pipeline.project">
                     <td>
-                        <select class="form-control form-control-sm" v-model="pipeline.tag" @change="checkout(pipeline, pipeline.tag, 'tag')">
-                            <option class="font-monospace" v-for="tag in pipeline.tags" :value="tag">{{ '{{ tag }}' }}</eq-option>
+                        <div class="btn-group">
+                            <button 
+                                type="button" 
+                                class="btn btn-success" 
+                                @click="goToPipeline(pipeline)"
+                                :disabled="!pipeline.ref_type"
+                            >
+                                <i class="bi bi-rocket-takeoff"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>{% raw %}{{ pipeline.organization }}{% endraw %}</td>
+                    <td>{% raw %}{{ pipeline.project }}{% endraw %}</td>
+                    <td style="max-width: 50%; white-space: normal; word-wrap: break-word">{% raw %}{{ pipeline.description }}{% endraw %}</td>
+                    <td style="width: 90px">
+                        <select class="form-control form-control-sm" v-model="pipeline.commit" @change="configure(pipeline, 'commit', $event.target.value)" :class="{'bg-primary text-white': pipeline.ref_type === 'commit'}">
+                            <option class="font-monospace" v-for="commit in filteredCommits(pipeline)" :key="commit" :value="commit">{% raw %}{{ commit.substring(0, 7) }}{% endraw %}</option>
                         </select>
                     </td>
-                    <td>
-                        <select class="form-control form-control-sm" v-model="pipeline.branch" @change="checkout(pipeline, pipeline.branch, 'branch')">
-                            <option class="font-monospace" v-for="branch in pipeline.branches" :value="branch">{{ '{{ branch }}' }}</option>
+                    <td style="width: 100px">
+                        <select class="form-control form-control-sm" v-model="pipeline.tag" @change="configure(pipeline, 'tag', $event.target.value)" :class="{'bg-primary text-white': pipeline.ref_type === 'tag'}">
+                            <option class="font-monospace" v-for="tag in filteredTags(pipeline)" :key="tag" :value="tag">{% raw %}{{ tag }}{% endraw %}</option>
+                        </select>
+                    </td>
+                    <td style="width: 100px">
+                        <select class="form-control form-control-sm" v-model="pipeline.branch" @change="configure(pipeline, 'branch', $event.target.value)" :class="{'bg-primary text-white': pipeline.ref_type === 'branch'}">
+                            <option class="font-monospace" v-for="branch in filteredBranches(pipeline)" :key="branch" :value="branch">{% raw %}{{ branch }}{% endraw %}</option>
                         </select>
                     </td>
                 </tr>
@@ -46,40 +92,102 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
-            pipelines: {{ pipelines | tojson }}
+            pipelines: {{ pipelines | tojson }},
+            filters: {
+                organization: '',
+                project: '',
+                commit: '',
+                tag: '',
+                branch: ''
+            },
+            sorting: {
+                field: null,
+                direction: 'asc'
+            }
         };
     },
-    methods: {
-        checkout(pipeline, value, rtype) {
-            const postData = {
-                organization: pipeline.organization,
-                project: pipeline.project,
-                value: value,
-                rtype: rtype
-            };
-            fetch('/api/checkout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(postData)
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.reload(); 
-                } else {
-                    throw new Error('Something went wrong on API server!');
-                }
-            })
-        },
-        configure(pipeline) {
-            window.location.href = `/pipeline/${pipeline.organization}/${pipeline.project}`;
-        }
+    computed: {
+        filteredAndSortedPipelines() {
+            let result = this.pipelines.filter(pipeline => {
+                const matchOrg = pipeline.organization.toLowerCase().includes(this.filters.organization.toLowerCase());
+                const matchProj = pipeline.project.toLowerCase().includes(this.filters.project.toLowerCase());
+                return matchOrg && matchProj;
+            });
 
+            if (this.sorting.field) {
+                result.sort((a, b) => {
+                    const aVal = a[this.sorting.field].toLowerCase();
+                    const bVal = b[this.sorting.field].toLowerCase();
+                    const direction = this.sorting.direction === 'asc' ? 1 : -1;
+                    return aVal > bVal ? direction : -direction;
+                });
+            }
+
+            return result;
+        }
+    },
+    methods: {
+        toggleSort(field) {
+            if (this.sorting.field === field) {
+                this.sorting.direction = this.sorting.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sorting.field = field;
+                this.sorting.direction = 'asc';
+            }
+        },
+        getSortIcon(field) {
+            if (this.sorting.field !== field) return 'bi-arrow-down-up';
+            return this.sorting.direction === 'asc' ? 'bi-sort-down' : 'bi-sort-up';
+        },
+        filteredCommits(pipeline) {
+            return Object.keys(pipeline.refs.commits).filter(commit => 
+                commit === pipeline.commit || 
+                commit.toLowerCase().includes(this.filters.commit.toLowerCase())
+            );
+        },
+        filteredTags(pipeline) {
+            return Object.keys(pipeline.refs.tags).filter(tag => 
+                tag === pipeline.tag || 
+                tag.toLowerCase().includes(this.filters.tag.toLowerCase())
+            );
+        },
+        filteredBranches(pipeline) {
+            return Object.keys(pipeline.refs.branches).filter(branch => 
+                branch === pipeline.branch || 
+                branch.toLowerCase().includes(this.filters.branch.toLowerCase())
+            );
+        },
+        configure(pipeline, ref_type, ref) {
+            pipeline.ref_type = ref_type;
+            if (ref_type === 'tag') {
+                pipeline.commit = pipeline.refs.tags[ref].substring(0, 7);
+                pipeline.branch = '';
+                pipeline.tag = ref;
+            } else if (ref_type === 'branch') {
+                pipeline.commit = pipeline.refs.branches[ref].substring(0, 7);
+                pipeline.branch = ref;
+                pipeline.tag = '';
+            } else if (ref_type === 'commit') {
+                pipeline.commit = ref.substring(0, 7);
+                pipeline.branch = '';
+                pipeline.tag = '';
+            }
+        },
+        goToPipeline(pipeline) {
+            let ref;
+            if (pipeline.ref_type === "commit") {
+                ref = pipeline.commit;
+            } else if (pipeline.ref_type === "branch") {
+                ref = pipeline.branch;
+            } else if (pipeline.ref_type === "tag") {
+                ref = pipeline.tag;
+            }
+            if (ref) {
+                window.location.href = `/pipeline/${pipeline.organization}/${pipeline.project}/${pipeline.ref_type}/${ref}`;
+            }
+        }
     }
 }).mount('#app');
 </script>
 
 {% endblock %}
-
-

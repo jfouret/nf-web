@@ -1,38 +1,32 @@
 from flask import render_template, redirect, url_for, session, flash
-import os
-import yaml
-import json
+from ..utils.workflow import RunConfigManager
 
 def init_app(app):
-  @app.route('/run_config/<organization>/<pipeline>/<run_name>')
-  def run_config_detail(organization, pipeline, run_name):
-    if not session.get('logged_in'):
-      return redirect(url_for('login'))
+    run_config_manager = RunConfigManager(app)
 
-    root_dir = app.config['ROOT_DIR']
-    run_config_dir = os.path.join(root_dir, 'run_configs', organization, pipeline, run_name)
-    run_yml_path = os.path.join(run_config_dir, 'run.yml')
-    params_json_path = os.path.join(run_config_dir, 'params.json')
-    config_content = ''
+    @app.route('/run_config/<organization>/<pipeline>/<run_name>')
+    def run_config_detail(organization, pipeline, run_name):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
 
-    if not os.path.exists(run_yml_path) or not os.path.exists(params_json_path):
-      flash('Run configuration files are missing.', 'error')
-      return redirect(url_for('run_configs'))
-
-    # Load run.yml
-    with open(run_yml_path, 'r') as f:
-      run_info = yaml.safe_load(f)
-
-    # Load params.json
-    with open(params_json_path, 'r') as f:
-      params = json.load(f)
-
-    # Load config file content if exists
-    config_file = run_info.get('config_file')
-    if config_file:
-      config_file_path = os.path.join(run_config_dir, config_file)
-      if os.path.exists(config_file_path):
-        with open(config_file_path, 'r') as f:
-          config_content = f.read()
-
-    return render_template('run_config.html', run_info=run_info, params=params, config_content=config_content)
+        try:
+            run_config = run_config_manager.get_run_config(organization, pipeline, run_name)
+            return render_template(
+                'run_config.html',
+                run_info={
+                    'organization': run_config['organization'],
+                    'pipeline_name': run_config['pipeline_name'],
+                    'run_name': run_config['run_name'],
+                    'ref': run_config['ref'],
+                    'ref_type': run_config['ref_type'],
+                    'nextflow_version': run_config['nextflow_version'],
+                    'config_file': run_config.get('config_id')
+                },
+                params=run_config['parameters']
+            )
+        except FileNotFoundError:
+            flash('Run configuration not found.', 'error')
+            return redirect(url_for('run_configs'))
+        except Exception as e:
+            flash(f'Error loading run configuration: {str(e)}', 'error')
+            return redirect(url_for('run_configs'))

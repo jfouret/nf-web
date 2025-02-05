@@ -3,14 +3,10 @@ from typing import Optional
 from .git_provider import GitProvider
 
 class GitRepo:
-    def __init__(self, provider: GitProvider, cache_dir: str):
+    def __init__(self, provider: GitProvider):
         self.provider = provider
-        self.cache_dir = cache_dir
         self.refs = {'branches': {}, 'tags': {}}
-        
-        # Create cache directory
-        os.makedirs(cache_dir, exist_ok=True)
-        
+                
         # Initialize refs
         self.update_refs()
         
@@ -37,19 +33,10 @@ class GitRepo:
         
     def fetch_file(self, path: str, ref: str) -> str:
         """Fetch file content using commit SHA with caching"""
-        cache_path = os.path.join(self.cache_dir, ref, path)
-        
-        # Check cache first
-        if os.path.exists(cache_path):
-            with open(cache_path, 'r') as f:
-                return f.read()
-                
-        # Fetch from provider
         content = self.provider.get_file_content(path, ref)
-        
-        # Cache the content
-        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-        with open(cache_path, 'w') as f:
-            f.write(content)
-            
         return content
+
+    @property
+    def default_branch(self) -> str:
+        """Get cache directory for the repository"""
+        return self.provider.get_default_branch()

@@ -2,7 +2,7 @@ import boto3
 from datetime import datetime
 from typing import Dict, List
 from .base import BaseFile
-from ..cache import s3_cache
+from ..cache import get_or_set_cache
 
 class S3File(BaseFile):
     def __init__(self, settings: Dict):
@@ -16,54 +16,55 @@ class S3File(BaseFile):
     def get_uri(self, path: str) -> str:
         return f"s3://{path}"
 
-    @s3_cache
     def list(self, path: str = "") -> List[Dict]:
-        items = []
+        cache_key = f"s3:list:{self.name}:{path}" if path else f"s3:list:{self.name}:buckets"
         
-        if not path:  # List buckets
-            buckets = self.s3.list_buckets()['Buckets']
-            for bucket in buckets:
-                if any(pattern.match(bucket['Name']) for pattern in self.bucket_patterns):
-                    items.append({
-                        "name": bucket['Name'],
-                        "uri": self.get_uri(bucket['Name']),
-                        "type": "directory",
-                        "created": bucket['CreationDate'],
-                        "modified": bucket['CreationDate'],
-                        "size": None
-                    })
-        else:  # List objects in bucket
-            bucket, prefix = self._parse_path(path)
-            if prefix != "" and not prefix.endswith("/"): 
-                prefix = f"{prefix}/"
-            paginator = self.s3.get_paginator('list_objects_v2')
-            
-            for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter='/'):
-                # Add directories
-                for prefix in page.get('CommonPrefixes', []):
-                    name = prefix['Prefix'].rstrip('/').split('/')[-1]
-                    items.append({
-                        "name": name,
-                        "uri": self.get_uri(f"{bucket}/{prefix['Prefix']}"),
-                        "type": "directory",
-                        "created": None,
-                        "modified": None,
-                        "size": None
-                    })
+        def fetch_list():
+            items = []
+            if not path:  # List buckets
+                buckets = self.s3.list_buckets()['Buckets']
+                for bucket in buckets:
+                    if any(pattern.match(bucket['Name']) for pattern in self.bucket_patterns):
+                        items.append({
+                            "name": bucket['Name'],
+                            "uri": self.get_uri(bucket['Name']),
+                            "type": "directory",
+                            "created": bucket['CreationDate'],
+                            "modified": bucket['CreationDate'],
+                            "size": None
+                        })
+            else:  # List objects in bucket
+                bucket, prefix = self._parse_path(path)
+                if prefix != "" and not prefix.endswith("/"): 
+                    prefix = f"{prefix}/"
+                paginator = self.s3.get_paginator('list_objects_v2')
                 
-                # Add files
-                for obj in page.get('Contents', []):
-                    name = obj['Key'].split('/')[-1]
-                    items.append({
-                        "name": name,
-                        "uri": self.get_uri(f"{bucket}/{obj['Key']}"),
-                        "type": "file",
-                        "created": None,
-                        "modified": obj['LastModified'],
-                        "size": obj['Size']
-                    })
+                for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter='/'):
+                    # Add directories
+                    for prefix in page.get('CommonPrefixes', []):
+                        name = prefix['Prefix'].rstrip('/').split('/')[-1]
+                        items.append({
+                            "name": name,
+                            "uri": self.get_uri(f"{bucket}/{prefix['Prefix']}"),
+                            "type": "directory",
+                            "created": None,
+                            "modified": None,
+                            "size": None
+                        })
                     
-        return items
+                    # Add files
+                    for obj in page.get('Contents', []):
+                        name = obj['Key'].split('/')[-1]
+                        items.append({
+                            "name": name,
+                            "uri": self.get_uri(f"{bucket}/{obj['Key']}"),
+                            "type": "file",
+                            "created": None,
+                            "modified": obj['LastModified'],
+                            "size": obj['Size']
+                        })
+            return items
+        return get_or_set_cache(cache_key, fetch_list)
 
     def get_download_url(self, path: str) -> str:
         try:
@@ -78,13 +79,18 @@ class S3File(BaseFile):
             return f"/api/storage/download?storage={self.name}&path={path}"
 
     def get_metadata(self, path: str) -> Dict:
-        bucket, key = self._parse_path(path)
-        obj = self.s3.head_object(Bucket=bucket, Key=key)
-        return {
-            "created": None,
-            "modified": obj['LastModified'],
-            "size": obj['ContentLength']
-        }
+        cache_key = f"s3:metadata:{self.name}:{path}"
+        
+        def fetch_metadata():
+            bucket, key = self._parse_path(path)
+            obj = self.s3.head_object(Bucket=bucket, Key=key)
+            return {
+                "created": None,
+                "modified": obj['LastModified'],
+                "size": obj['ContentLength']
+            }
+            
+        return get_or_set_cache(cache_key, fetch_metadata)
 
     def _parse_path(self, path: str) -> tuple[str, str]:
         """Split path into bucket and key"""

@@ -2,7 +2,6 @@ from flask import render_template, request, redirect, url_for, session, flash
 import os
 from ..utils.workflow.github_provider import GitHubProvider
 from ..utils.workflow.git_repo import GitRepo
-from ..utils.workflow.pipeline import Pipeline
 from .. import models
 
 def init_app(app):
@@ -40,20 +39,14 @@ def init_app(app):
         
         # Initialize provider and repo
         provider = GitHubProvider(organization, pipeline_name)
-        repo = GitRepo(provider, os.path.join(pipelines_path, f"{organization}_{pipeline_name}"))
-        pipeline = Pipeline(repo)
+        repo = GitRepo(provider)
+        repo.update_refs()
         
-        # Get repository information and default branch
-        refs = pipeline.get_refs()
-        default_branch, branch_type = pipeline.get_default_branch()
-
         # Create new pipeline record
         new_pipeline = models.Pipeline(
           provider='github',
           org_name=organization,
-          project_name=pipeline_name,
-          ref=default_branch,
-          ref_type=branch_type
+          project_name=pipeline_name
         )
         
         models.db.session.add(new_pipeline)

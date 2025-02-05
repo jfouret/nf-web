@@ -21,6 +21,30 @@
 <div id="app" class="container mt-4">
   <h2>Pipeline: {{ pipeline.organization }}/{{ pipeline.project }}</h2>
 
+  <div class="mb-4">
+    <div class="d-flex align-items-center">
+      <div class="me-3">
+        <label>Reference Type:</label>
+        <select class="form-control" v-model="refType" @change="updateRef">
+          <option value="branch">Branch</option>
+          <option value="tag">Tag</option>
+          <option value="commit">Commit</option>
+        </select>
+      </div>
+      <div class="me-3">
+        <label>Reference:</label>
+        <select v-if="refType === 'branch'" class="form-control" v-model="selectedRef">
+          <option v-for="branch in branches" :value="branch">{% raw %}{{ branch }}{% endraw %}</option>
+        </select>
+        <select v-else-if="refType === 'tag'" class="form-control" v-model="selectedRef">
+          <option v-for="tag in tags" :value="tag">{% raw %}{{ tag }}{% endraw %}</option>
+        </select>
+        <input v-else type="text" class="form-control" v-model="selectedRef" placeholder="Enter commit hash">
+      </div>
+      <button type="button" class="btn btn-primary" @click="updateReference">Update Reference</button>
+    </div>
+  </div>
+
   <p><strong>Description:</strong> {{ pipeline.description }}</p>
   <p><strong>Nextflow Version:</strong> {{ pipeline.nextflowVersion }}</p>
   <p><strong>Current Revision:</strong> {{ pipeline.head }}</p>
@@ -151,10 +175,25 @@
         runName: '',
         nextflowVersion: '',
         selectedConfig: '',
-        configFiles: {{ config_files | tojson }}
+        configFiles: {{ config_files | tojson }},
+        refType: '{{ ref_type }}',
+        selectedRef: '{{ ref }}',
+        branches: {{ branches | tojson }},
+        tags: {{ tags | tojson }},
+        commits: {{ commits | tojson }}
       };
     },
     methods: {
+      updateRef() {
+        // Reset selectedRef when changing ref type
+        this.selectedRef = this.refType === 'branch' ? 
+          (this.branches.includes('main') ? 'main' : this.branches[0]) :
+          this.refType === 'tag' ? 
+            (this.tags.length > 0 ? this.tags[0] : '') : '';
+      },
+      updateReference() {
+        window.location.href = `/pipeline/{{ pipeline.organization }}/{{ pipeline.project }}/${this.refType}/${this.selectedRef}`;
+      },
       submitForm() {
         this.missingParams = [];
         this.parameters = {}; // Reset parameters
@@ -162,20 +201,16 @@
         // Iterate over schema properties and populate parameters
         {% for key, group in schema.definitions.items() %}
           {% for property, details in group.properties.items() %}
-            const {{property}}_value = document.getElementById('_{{ property }}').value;
-            if ({{property}}_value !== '') {
+            const value = document.getElementById('_{{ property }}').value;
+            if (value !== '') {
               {% if details.type == "boolean" %}
-                if ({{property}}_value == "on"){
-                  this.parameters['{{ property }}'] = true;
-                } else {
-                  this.parameters['{{ property }}'] = false;
-                }
+                this.parameters['{{ property }}'] = value === "on";
               {% elif details.type == "integer" %}
-                this.parameters['{{ property }}'] = parseInt({{property}}_value);
+                this.parameters['{{ property }}'] = parseInt(value);
               {% elif details.type == "number" %}
-                this.parameters['{{ property }}'] = Number({{property}}_value);
+                this.parameters['{{ property }}'] = Number(value);
               {% else %}
-                this.parameters['{{ property }}'] = {{property}}_value;
+                this.parameters['{{ property }}'] = value;
               {% endif %}
             }
           {% endfor %}
@@ -188,7 +223,9 @@
           selected_config: this.selectedConfig,
           parameters: this.parameters,
           organization: '{{ pipeline.organization }}',
-          project: '{{ pipeline.project }}'
+          project: '{{ pipeline.project }}',
+          ref: this.selectedRef,
+          ref_type: this.refType
         };
 
         // Send data to the API

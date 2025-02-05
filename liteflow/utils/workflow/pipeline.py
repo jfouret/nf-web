@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 from .git_repo import GitRepo
+from ..nf import parse_nf_manifest
 
 class Pipeline:
     def __init__(self, git_repo: GitRepo, release: str = None, release_type: str = None):
@@ -53,8 +54,7 @@ class Pipeline:
     def parse_metadata(self) -> dict:
         """Parse nextflow.config for metadata"""
         config = self.fetch_config()
-        # TODO: Implement config parsing
-        return {}
+        return parse_nf_manifest(config)
         
     def fetch_schema(self) -> str:
         """Get nextflow_schema.json content"""
