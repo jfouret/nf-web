@@ -50,9 +50,9 @@ class RunConfigManager:
         run_dir.mkdir(parents=True, exist_ok=True)
         
         # Save params.json
-        params_path = run_dir / 'params.json'
+        params_path = run_dir / 'params.yaml'
         with params_path.open('w') as f:
-            json.dump(parameters, f, indent=2)
+            yaml.dump(parameters, f, indent=2)
             
         # Create run.yml
         run_info = {
@@ -73,24 +73,19 @@ class RunConfigManager:
                 # Copy config file
                 config_src = self.root_dir / 'configs' / config.filename
                 if config_src.exists():
-                    shutil.copy2(config_src, run_dir / config.filename)
-                    
-        # Save run.yml
-        run_yml_path = run_dir / 'run.yml'
-        with run_yml_path.open('w') as f:
-            yaml.dump(run_info, f)
+                    shutil.copy2(config_src, run_dir / "nextflow.config")
                 
         # Create database entry
         run_config = models.RunConfig(
-            organization=organization,
-            pipeline_name=pipeline_name,
-            run_name=run_name,
-            pipeline_id=pipeline_id,
-            ref=ref,
-            ref_type=ref_type,
-            nextflow_version=nextflow_version,
-            parameters=parameters,
-            config_id=config_id
+            organization = organization,
+            pipeline_name = pipeline_name,
+            run_name = run_name,
+            pipeline_id = pipeline_id,
+            ref = ref,
+            ref_type = ref_type,
+            nextflow_version = nextflow_version,
+            parameters = parameters,
+            config_id = config_id
         )
         self.db.session.add(run_config)
         self.db.session.commit()
@@ -121,6 +116,25 @@ class RunConfigManager:
             raise FileNotFoundError(f"Run config {organization}/{pipeline_name}/{run_name} not found")
             
         return run_config._to_dict()
+    
+    def get_config_file_from_run_config(self, organization: str, pipeline_name: str, run_name: str) -> str:
+        """Get config file from run config
+
+        Args:
+            organization: Organization name
+            pipeline_name: Pipeline project name
+            run_name: Name of the run
+        Returns:
+           Config file path
+        Raises:
+            FileNotFoundError: If run config doesn't exist
+        """
+        run_config = self.get_run_config(organization, pipeline_name, run_name)
+        config_file = self.run_configs_dir / organization / pipeline_name / run_name / "nextflow.config"
+        if config_file.exists():
+            return config_file
+        else:
+            return None
         
     def list_run_configs(self) -> List[Dict]:
         """Get all run configs
