@@ -1,13 +1,15 @@
+# Core dependencies
 flask
-GitPython
-requests
-PyGithub
-Flask-SQLAlchemy
-Flask-Caching
-boto3
-python-magic
+flask-sqlalchemy
 flask-jwt-extended
-cryptography
+python-dotenv
 bcrypt
-PyYAML
+pyyaml
 jsonschema
+pathlib
+flask-caching
+boto3
+requests
+markdown
+pygithub
+psutil
