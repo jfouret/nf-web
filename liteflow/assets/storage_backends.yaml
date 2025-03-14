@@ -1,0 +1,23 @@
+# Default storage backends configuration for LiteFlow
+# This file can be loaded by setting the LITEFLOW_STORAGE_CONFIG environment variable
+# to the path of this file.
+#
+# The {{ROOT_DIR}} placeholder will be replaced with the actual root directory path
+# configured in LiteFlow.
+
+local_data:
+  type: local
+  root: "{{ROOT_DIR}}/data"
+  description: Local Data Files
+
+local_configs:
+  type: local
+  root: "{{ROOT_DIR}}/configs"
+  description: Configuration Files
+
+aws_data:
+  type: s3
+  bucket_patterns:
+    - ".*"
+  region: eu-west-3
+  description: AWS Data Storage

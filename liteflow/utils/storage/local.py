@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 from .base import BaseFile
 
-class ServerFile(BaseFile):
+class LocalFile(BaseFile):
     def __init__(self, settings: Dict):
         super().__init__(settings)
         self.root = Path(settings['root'])

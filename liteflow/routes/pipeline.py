@@ -7,6 +7,7 @@ from ..utils.workflow import RunConfigManager
 from ..utils.workflow import GitHubProvider
 from ..utils.workflow import GitRepo
 from ..utils.workflow import Pipeline
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     storage_manager = StorageManager(app.config)
@@ -15,8 +16,6 @@ def init_app(app):
 
     @app.route('/pipeline/<organization>/<project>/<ref_type>/<ref>', methods=['GET', 'POST'])
     def pipeline_page(organization: str, project: str, ref_type: str, ref: str):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
 
         # Validate ref_type
         provider = GitHubProvider(organization, project)

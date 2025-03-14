@@ -1,13 +1,12 @@
 from flask import render_template, redirect, url_for, session, flash
 from ..utils.workflow import RunConfigManager
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     run_config_manager = RunConfigManager(app)
 
     @app.route('/run_config/<organization>/<pipeline>/<run_name>')
     def run_config_detail(organization, pipeline, run_name):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
 
         try:
             run_config = run_config_manager.get_run_config(organization, pipeline, run_name)

@@ -1,11 +1,14 @@
-from flask import Flask
+from flask import Flask, send_from_directory, redirect, url_for, jsonify, request
 from pathlib import Path
 from .utils.workflow import ConfigManager
 from dotenv import load_dotenv
 from .config import Config
 from . import models
 from .utils.cache import init_cache
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from datetime import timedelta
 import json
+import os
 
 def create_app():
     app = Flask('liteflow')
@@ -19,6 +22,57 @@ def create_app():
         
     # Initialize cache
     init_cache(app)
+    
+    # Configure JWT
+    app.config["JWT_SECRET_KEY"] = app.config["JWT_SECRET_KEY"]
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=app.config["JWT_ACCESS_TOKEN_EXPIRES"])
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(seconds=app.config["JWT_REFRESH_TOKEN_EXPIRES"])
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = True 
+    
+    jwt = JWTManager(app)
+    
+    # Create custom error handlers for JWT
+    @jwt.unauthorized_loader
+    def unauthorized_callback(callback):
+        return redirect(url_for('login'))
+
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_data):
+        return redirect(url_for('login'))
+        
+    # Add a global authentication check for all routes
+    @app.before_request
+    def check_auth():
+        # Skip authentication for these routes
+        exempt_routes = [
+            'login',           # Login page
+            'logout',          # Logout page
+            'static',          # Static files
+            'favicon_ico'      # Favicon
+        ]
+        
+        # Check if the current route is exempt
+        if request.endpoint in exempt_routes:
+            return  # Skip authentication check
+            
+        # Try to verify JWT token
+        from flask_jwt_extended import verify_jwt_in_request
+        try:
+            verify_jwt_in_request(locations=["cookies"])
+        except Exception:
+            # If JWT verification fails, redirect to login
+            return redirect(url_for('login'))
+    
+    # Add favicon routes
+    @app.route('/favicon.ico')
+    def favicon_ico():
+        return send_from_directory(
+            Path(app.root_path) / 'static' / 'images',
+            'favicon.svg',
+            mimetype='image/svg+xml'
+        )
+
 
     @app.template_filter('to_nice_json')
     def to_nice_json(value):

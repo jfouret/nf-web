@@ -1,14 +1,12 @@
 from flask import jsonify, session, redirect, url_for, request
 from ...utils.storage import StorageManager
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     storage = StorageManager(app.config)
     
     @app.route('/api/storage/<backend>/list', methods=['GET'])
     def list_storage_files(backend):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-            
         path = request.args.get('path', '').lstrip("/")
         try:
             provider = storage.get_backend(backend)

@@ -3,12 +3,11 @@ from .. import models
 from ..utils.workflow import GitHubProvider
 from ..utils.workflow import GitRepo
 from ..utils.workflow import Pipeline
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     @app.route('/pipelines')  
     def pipelines():
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
         
         pipeline_list = []
         

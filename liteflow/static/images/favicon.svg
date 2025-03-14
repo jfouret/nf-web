@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 8.4666665 8.4666666"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (1:1.4+202410161351+e7c3feb100)"
+   sodipodi:docname="favicon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="22.758045"
+     inkscape:cx="23.156646"
+     inkscape:cy="12.676836"
+     inkscape:window-width="2498"
+     inkscape:window-height="1376"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       d="M 0.23926241,7.6610951 V 1.2869672 H 1.5872923 V 6.5451764 H 4.1762238 V 7.6610951 Z M 7.8721345,3.7866252 H 6.7205063 V 7.6610951 H 5.3903312 V 3.7866252 H 4.6582884 V 3.143856 L 5.3903312,2.786762 V 2.429668 q 0,-0.6249145 0.205329,-0.9641538 0.2142564,-0.3481666 0.5981325,-0.49100424 0.3928034,-0.1428376 0.919517,-0.1428376 0.3928034,0 0.7052607,0.0624915 0.3213846,0.0624915 0.5177863,0.14283759 L 7.9971174,2.0100826 q -0.151765,-0.044637 -0.330312,-0.080346 -0.178547,-0.044637 -0.4106581,-0.044637 -0.2767478,0 -0.4106581,0.1696196 Q 6.7205063,2.224339 6.7205063,2.4832321 V 2.786762 h 1.1516282 z"
+       id="text1"
+       style="font-weight:bold;font-size:8.92735px;line-height:1.25;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans, Bold';text-align:center;text-anchor:middle;fill:#333030;stroke-width:0.239125"
+       transform="scale(1.0030828,0.99692667)"
+       aria-label="Lf" />
+  </g>
+</svg>

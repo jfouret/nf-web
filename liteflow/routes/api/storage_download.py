@@ -1,14 +1,13 @@
 from flask import redirect, session, url_for, request, jsonify, send_file
 from ...utils.storage import StorageManager
 from pathlib import Path
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     storage = StorageManager(app.config)
     
     @app.route('/api/storage/download', methods=['GET'])
     def download_storage_file():
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
             
         if 'storage' not in request.args or 'path' not in request.args:
             return jsonify({"error": "Missing storage or path parameter"}), 400

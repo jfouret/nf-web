@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Storage Backends Configuration",
+  "description": "Schema for validating storage backends configuration",
+  "type": "object",
+  "patternProperties": {
+    "^[a-zA-Z0-9_-]+$": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["local", "s3"],
+          "description": "Type of storage backend"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the storage backend"
+        }
+      },
+      "required": ["type"],
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "local" } }
+          },
+          "then": {
+            "properties": {
+              "root": {
+                "type": "string",
+                "description": "Root directory path for local storage"
+              }
+            },
+            "required": ["root"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "s3" } }
+          },
+          "then": {
+            "properties": {
+              "bucket_patterns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Regex patterns for matching S3 bucket names"
+              },
+              "region": {
+                "type": "string",
+                "description": "AWS region for S3 storage"
+              }
+            },
+            "required": ["bucket_patterns"]
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

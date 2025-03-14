@@ -24,3 +24,24 @@ In-developement
 
 Check the [brief](./brief.md)
 
+## Testing
+
+### Setup
+
+The project uses Playwright for end-to-end testing. To set up the testing environment:
+
+```bash
+pip install -r requirements-test.txt
+```
+
+### Running Tests
+
+To run the login tests:
+```bash
+python -m pytest tests/test_login.py -v
+```
+
+To run all tests:
+```bash
+python -m pytest tests/ -v
+```

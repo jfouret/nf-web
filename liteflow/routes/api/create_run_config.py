@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from ... import models
 from ...utils.workflow.run_config import RunConfigManager
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     run_config_manager = RunConfigManager(app)

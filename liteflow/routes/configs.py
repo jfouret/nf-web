@@ -1,15 +1,13 @@
 from flask import render_template, request, redirect, url_for, session, flash
 from pathlib import Path
 from ..utils.workflow.config import ConfigManager
+from flask_jwt_extended import jwt_required
 
 def init_app(app):
     config_manager = ConfigManager(app, at_app_creation=False)
 
     @app.route('/configs', methods=['GET', 'POST'])
-    def configs():
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-        
+    def configs():        
         if request.method == 'POST':
             try:
                 config = config_manager.create_config(
@@ -30,8 +28,6 @@ def init_app(app):
 
     @app.route('/configs/set_default/<filename>', methods=['POST'])
     def set_default_config(filename):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
         
         if config_manager.has_enforced_default:
             flash('Default config is enforced by system configuration!', category='error')
@@ -47,9 +43,6 @@ def init_app(app):
 
     @app.route('/configs/edit/<filename>', methods=['GET', 'POST'])
     def edit_config(filename):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-
         try:
             config = config_manager.get_config(filename)
             
@@ -70,8 +63,6 @@ def init_app(app):
 
     @app.route('/configs/delete/<filename>', methods=['POST'])
     def delete_config(filename):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
 
         try:
             # Get config first to check if it's default

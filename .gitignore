@@ -10,3 +10,5 @@ sum.txt
 github_token.txt
 instructions.txt
 LICENCE.txt
+.coverage
+/liteflow_root_dir/

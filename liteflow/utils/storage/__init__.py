@@ -1,6 +1,6 @@
 from .manager import StorageManager
 from .base import BaseFile
-from .server import ServerFile
+from .local import LocalFile
 from .s3 import S3File
 
-__all__ = ['StorageManager', 'BaseFile', 'ServerFile', 'S3File']
+__all__ = ['StorageManager', 'BaseFile', 'LocalFile', 'S3File']
