@@ -26,6 +26,9 @@ Check the [brief](./brief.md)
 
 ## Testing
 
+[![Tests](https://github.com/jfouret/nf-web/actions/workflows/tests.yml/badge.svg)](https://github.com/jfouret/nf-web/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/jfouret/nf-web/branch/main/graph/badge.svg)](https://codecov.io/gh/jfouret/nf-web)
+
 ### Setup
 
 The project uses Playwright for end-to-end testing. To set up the testing environment:
@@ -38,10 +41,25 @@ pip install -r requirements-test.txt
 
 To run the login tests:
 ```bash
-python -m pytest tests/test_login.py -v
+python -m pytest tests/test_auth.py -v
 ```
 
 To run all tests:
 ```bash
 python -m pytest tests/ -v
 ```
+
+### Coverage Reports
+
+To generate a coverage report:
+
+```bash
+python -m pytest tests/ --cov=liteflow --cov-report=term --cov-report=html
+```
+
+This will:
+- Run all tests
+- Generate a terminal coverage report
+- Create an HTML coverage report in the `htmlcov/` directory
+
+The HTML report provides detailed information about which lines of code are covered by tests and which are not, helping identify areas that need additional testing.
