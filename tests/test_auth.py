@@ -2,10 +2,13 @@ import pytest
 import os
 import json
 
-def test_login_cookies(page, flask_server):
+def test_login_cookies(browser_context):
     """Test that cookies are set correctly after login."""
+    # Unpack the browser context
+    page, server_url = browser_context
+    
     # Navigate to login page
-    page.goto(f"{flask_server}/login")
+    page.goto(f"{server_url}/login")
     
     # Get the master password from the app
     test_password = os.getenv("LITEFLOW_LOGIN_PASSWORD")
@@ -15,10 +18,10 @@ def test_login_cookies(page, flask_server):
     page.click("button.btn-primary")
     
     # Wait for navigation to complete
-    page.wait_for_url(f"{flask_server}/home")
+    page.wait_for_url(f"{server_url}/home")
     
     # Check that we're on the home page
-    assert page.url == f"{flask_server}/home"
+    assert page.url == f"{server_url}/home"
     
     # Get cookies
     cookies = page.context.cookies()
@@ -37,17 +40,20 @@ def test_login_cookies(page, flask_server):
     
     print(f"Cookies after login: {json.dumps(cookies, indent=2)}")
 
-def test_no_cookies_with_incorrect_password(page, flask_server):
+def test_no_cookies_with_incorrect_password(browser_context):
     """Test that no JWT cookies are set with incorrect password."""
+    # Unpack the browser context
+    page, server_url = browser_context
+    
     # Navigate to login page
-    page.goto(f"{flask_server}/login")
+    page.goto(f"{server_url}/login")
     
     # Fill in login form with incorrect password and submit
     page.fill("#password", "wrong_password")
     page.click("button.btn-primary")
     
     # Check that we're still on the login page
-    assert page.url == f"{flask_server}/login"
+    assert page.url == f"{server_url}/login"
     
     # Get cookies
     cookies = page.context.cookies()

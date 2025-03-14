@@ -84,22 +84,50 @@ def playwright_browser():
     playwright.stop()
 
 @pytest.fixture
-def page(playwright_browser, flask_server):
-    """Create a new page for each test."""
+def browser_context(playwright_browser, app_with_test_config):
+    """Create a browser context with page and server URL for each test."""
+    # Find an available port
+    for port in range(5000, 6000):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('localhost', port))
+                break
+        except OSError:
+            continue
+    
+    # Start server in a separate thread for this test only
+    def run_server():
+        app_with_test_config.run(port=port)
+    
+    server_thread = threading.Thread(target=run_server)
+    server_thread.daemon = True
+    server_thread.start()
+    
+    # Wait for server to start
+    time.sleep(1)
+    
+    # Create a new browser context and page
     context = playwright_browser.new_context()
     page = context.new_page()
-    
     page.set_default_timeout(1000)
     
-    yield page
+    # Create the server URL
+    server_url = f"http://127.0.0.1:{port}"
     
+    # Yield the tuple of (page, server_url)
+    yield (page, server_url)
+    
+    # Clean up
     context.close()
+    # Server thread will terminate automatically as it's a daemon thread
 
 @pytest.fixture
-def logged_in_page(page, flask_server):
-    """Create a logged-in page for tests that require authentication."""
+def logged_in_browser_context(browser_context):
+    """Create a logged-in browser context with page and server URL."""
+    page, server_url = browser_context
+    
     # Navigate to login page
-    page.goto(f"{flask_server}/login")
+    page.goto(f"{server_url}/login")
     
     # Get the master password from the app
     test_password = os.getenv("LITEFLOW_LOGIN_PASSWORD")
@@ -111,11 +139,12 @@ def logged_in_page(page, flask_server):
     page.set_default_timeout(5000)
     
     # Click the submit button and wait for navigation to complete
-    with page.expect_navigation(url=f"{flask_server}/home", wait_until="networkidle"):
+    with page.expect_navigation(url=f"{server_url}/home", wait_until="networkidle"):
         page.click("button.btn-primary")
     
     # Verify we're on the home page
-    assert page.url == f"{flask_server}/home", f"Failed to navigate to home page. Current URL: {page.url}"
+    assert page.url == f"{server_url}/home", f"Failed to navigate to home page. Current URL: {page.url}"
     
-    # Return the logged-in page
-    return page
+    # Return the tuple with logged-in page
+    return (page, server_url)
+
