@@ -52,6 +52,8 @@ def create_app():
             'favicon_ico'      # Favicon
         ]
         
+        # Log request information
+        
         # Check if the current route is exempt
         if request.endpoint in exempt_routes:
             return  # Skip authentication check
@@ -60,8 +62,10 @@ def create_app():
         from flask_jwt_extended import verify_jwt_in_request
         try:
             verify_jwt_in_request(locations=["cookies"])
-        except Exception:
-            # If JWT verification fails, redirect to login
+        except Exception as e:
+            # If JWT verification fails, log details and redirect to login
+            print(f"JWT Verification Failed: {str(e)}")
+            print(f"Exception type: {type(e).__name__}")
             return redirect(url_for('login'))
     
     # Add favicon routes

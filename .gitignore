@@ -12,3 +12,4 @@ instructions.txt
 LICENCE.txt
 .coverage
 /liteflow_root_dir/
+/coverage.xml

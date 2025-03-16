@@ -10,8 +10,8 @@ class Config(db.Model):
     name = db.Column(db.String(100), nullable=False)
     filename = db.Column(db.String(100), nullable=False, unique=True)
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
+    updated_at = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
 
     @classmethod
     def get_default(cls):
@@ -67,8 +67,8 @@ class Pipeline(db.Model):
     provider = db.Column(db.String(50), nullable=False)  # github or gitlab
     org_name = db.Column(db.String(100), nullable=False)
     project_name = db.Column(db.String(100), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
+    updated_at = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
 
     def __repr__(self):
         return f'<Pipeline {self.org_name}/{self.project_name}>'
@@ -84,8 +84,8 @@ class RunConfig(db.Model):
     ref_type = db.Column(db.String(20), nullable=False)  # 'branch', 'tag', or 'commit'
     nextflow_version = db.Column(db.String(50))
     parameters = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
+    updated_at = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
     
     # Foreign keys
     pipeline_id = db.Column(db.Integer, db.ForeignKey('pipelines.id'), nullable=False)

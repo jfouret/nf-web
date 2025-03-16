@@ -4,3 +4,5 @@ pytest-playwright
 playwright
 pytest-flask
 pytest-cov
+pandas
+html5lib

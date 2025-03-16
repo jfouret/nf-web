@@ -1,4 +1,4 @@
-from github import Github
+from github import Github, Auth
 from .git_provider import GitProvider
 from ..cache import get_or_set_cache
 from typing import Dict
@@ -16,14 +16,18 @@ class GitHubProvider(GitProvider):
         token = current_app.config['GITHUB_TOKEN']
         if token == "":
             token = None
+            auth_token = None
+        else:
+            auth_token = Auth.Token(token)
         self.token = token
         
+
         # Initialize GitHub client
         if host != "github.com":
             base_url = f"{protocol}://{host}/api/v3"
-            self.gh = Github(base_url=base_url, login_or_token=token)
+            self.gh = Github(base_url=base_url, auth = auth_token)
         else:
-            self.gh = Github(login_or_token=token)
+            self.gh = Github(auth = auth_token)
             
         # Get repo with caching
         self.repo = get_or_set_cache(

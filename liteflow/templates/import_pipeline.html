@@ -5,12 +5,109 @@
 {% block content %}
 <div class="container">
     <h2>Import Pipeline</h2>
-    <form method="post">
+    <form id="importForm">
         <div class="mb-3">
             <label for="repoInput" class="form-label">Repository</label>
             <input type="text" class="form-control" id="repoInput" name="repository" placeholder="organization/pipeline_name" required>
         </div>
-        <button type="submit" class="btn btn-primary">Import</button>
+        <button type="submit" id="submitButton" class="btn btn-primary">
+            <span id="buttonText">Import</span>
+            <span id="loadingSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span>
+        </button>
     </form>
+    <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+    <div id="successMessage" class="alert alert-success mt-3" style="display: none;"></div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const importForm = document.getElementById('importForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const submitButton = document.getElementById('submitButton');
+    const buttonText = document.getElementById('buttonText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    // Track if a request is in progress
+    let isSubmitting = false;
+    
+    // Get the CSRF token from the cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    
+    // Show loading state
+    function showLoading() {
+        isSubmitting = true;
+        submitButton.disabled = true;
+        buttonText.textContent = 'Importing...';
+        loadingSpinner.style.display = 'inline-block';
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+    }
+    
+    // Reset form to normal state
+    function resetForm() {
+        isSubmitting = false;
+        submitButton.disabled = false;
+        buttonText.textContent = 'Import';
+        loadingSpinner.style.display = 'none';
+    }
+    
+    importForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Prevent multiple submissions
+        if (isSubmitting) {
+            return;
+        }
+        
+        const repository = document.getElementById('repoInput').value;
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('repository', repository);
+        
+        // Get CSRF token from cookie
+        const csrfToken = getCookie('csrf_access_token');
+        
+        // Show loading state
+        showLoading();
+        
+        // Send AJAX request with CSRF token in header
+        fetch('/import_pipeline', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            if (data) {
+                if (data.error) {
+                    // Show error message
+                    errorMessage.textContent = data.error;
+                    errorMessage.style.display = 'block';
+                    resetForm();
+                } else if (data.success) {
+                    // Show success message
+                    successMessage.textContent = data.message || 'Pipeline imported successfully.';
+                    successMessage.style.display = 'block';
+                    resetForm();
+                }
+            }
+        })
+        .catch(error => {
+            console.log('Response handling:', error);
+            resetForm();
+        });
+    });
+});
+</script>
 {% endblock %}

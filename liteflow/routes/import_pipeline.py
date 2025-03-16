@@ -1,39 +1,40 @@
-from flask import render_template, request, redirect, url_for, session, flash
+from flask import render_template, request, redirect, url_for, session, flash, jsonify, make_response
 import os
 from ..utils.workflow.github_provider import GitHubProvider
 from ..utils.workflow.git_repo import GitRepo
 from .. import models
 from flask_jwt_extended import jwt_required
+from pathlib import Path
 
 def init_app(app):
     @app.route('/import_pipeline', methods=['GET', 'POST'])
     def import_pipeline():
         if request.method == 'POST':
+            if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+                app.logger.error('Invalid POST request to /import_pipeline. Missing X-Requested-With=XMLHttpRequest header.')
+                return jsonify({'error': 'Invalid request'}), 400
             repo_data = request.form['repository'].split('/')
             if len(repo_data) != 2:
-                flash('Invalid repository format. Use "organization/pipeline_name".')
-                return redirect(url_for('import_pipeline'))
+                error_msg = 'Invalid repository format. Use "organization/pipeline_name".'
+                return jsonify({'error': error_msg}), 400
             
-            root_dir = app.config['ROOT_DIR']
-            pipelines_path = os.path.join(root_dir, 'pipelines')
-
-            if not os.path.exists(root_dir):
-                os.makedirs(root_dir)
-            if not os.path.exists(pipelines_path):
-                os.makedirs(pipelines_path)
+            root_dir = Path(app.config['ROOT_DIR'])
+            pipelines_path = root_dir / 'pipelines'
+            pipelines_path.mkdir(parents=True, exist_ok=True)
 
             organization, pipeline_name = repo_data
             
             try:
-                # Check if pipeline already exists
                 existing_pipeline = models.Pipeline.query.filter_by(
                     org_name=organization,
                     project_name=pipeline_name
                 ).first()
                 
                 if existing_pipeline:
-                    flash('Pipeline already imported.')
-                    return redirect(url_for('pipelines'))
+                    success_msg = 'Pipeline already imported.'
+                    response = jsonify({'success': True, 'message': success_msg})
+                    flash(success_msg)
+                    return response
                 
                 # Initialize provider and repo
                 provider = GitHubProvider(organization, pipeline_name)
@@ -50,11 +51,15 @@ def init_app(app):
                 models.db.session.add(new_pipeline)
                 models.db.session.commit()
                 
-                flash('Pipeline imported successfully.')
-                return redirect(url_for('pipelines'))
-                
+                success_msg = 'Pipeline imported successfully.'
+                response = jsonify({'success': True, 'message': success_msg})
+                flash(success_msg)
+                return response
+
             except Exception as e:
-                flash(f'Error importing pipeline: {str(e)}')
-                return redirect(url_for('import_pipeline'))
+                error_msg = f'Error importing pipeline: {str(e)}'
+                app.logger.error(error_msg)
+                flash(error_msg)
+                return jsonify({'error': error_msg}), 500
 
         return render_template('import_pipeline.html')
