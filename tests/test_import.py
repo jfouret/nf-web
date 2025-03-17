@@ -5,7 +5,7 @@ from io import StringIO
 
 def test_import_pipeline_and_verify(loaded_browser_context):
     """Test importing a pipeline and verifying it appears in the pipelines list."""
-    page, server_url, pipelines = loaded_browser_context
+    page, server_url, pipelines, _ = loaded_browser_context
     
     # Navigate to import pipeline page
     page.goto(f"{server_url}/pipelines")

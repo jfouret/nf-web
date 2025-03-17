@@ -5,8 +5,9 @@
 
 <br>
 
-<form method="post" class="row row-cols-lg-auto g-3 align-items-center">
+<div id="alertContainer"></div>
 
+<form id="createConfigForm" class="row row-cols-lg-auto g-3 align-items-center">
     <div class="col-12">
       <label class="visually-hidden" for="inlineFormInputName">Name</label>
       <input type="text" name="name" class="form-control" id="inlineFormInputName" placeholder="Config Name" required>
@@ -18,9 +19,12 @@
     </div>
   
     <div class="col-12">
-      <button type="submit" class="btn btn-primary">Create</button>
+      <button type="submit" id="createConfigBtn" class="btn btn-primary">
+        <span id="createBtnText">Create</span>
+        <span id="createSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span>
+      </button>
     </div>
-  </form>
+</form>
 
 <br>
 
@@ -34,31 +38,221 @@
         <th>Delete</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="configTableBody">
     {% for config in config_files %}
-    <tr>
+    <tr id="config-row-{{ config.filename }}">
         <td>{{ config.name }}</td>
         <td>{{ config.filename }}</td>
-        <td>
-            {% if config.is_default %}
-                <span class="badge bg-success">Default</span>
-                {% if not can_change_default %}
-                    <span class="badge bg-warning" title="Enforced by system">Enforced</span>
-                {% endif %}
-            {% elif can_change_default %}
-                <form method="post" action="{{ url_for('set_default_config', config_id=config.id) }}" style="display: inline;">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">Set as Default</button>
-                </form>
+        <td class="default-status-cell" data-filename="{{ config.filename }}">
+            <span class="badge bg-success default-badge" style="{% if not config.is_default %}display: none;{% endif %}">Default</span>
+            {% if not can_change_default and config.is_default %}
+                <span class="badge bg-warning" title="Enforced by system">Enforced</span>
+            {% endif %}
+            {% if can_change_default %}
+                <button type="button" class="btn btn-sm btn-outline-primary set-default-btn" data-filename="{{ config.filename }}" style="{% if config.is_default %}display: none;{% endif %}">Set as Default</button>
             {% endif %}
         </td>
         <td><a href="{{ url_for('edit_config', filename=config.filename) }}"><button type="button" class="btn btn-primary">Edit</button></a></td>
         <td>
-            <form method="post" action="{{ url_for('delete_config', filename=config.filename) }}">
-                <button type="submit" class="btn btn-primary" {% if config.is_default and not can_change_default %}disabled{% endif %}>Delete</button>
-            </form>
+            <button type="button" class="btn btn-primary delete-config-btn" data-filename="{{ config.filename }}" {% if config.is_default and not can_change_default %}disabled{% endif %}>Delete</button>
         </td>
     </tr>
     {% endfor %}
     </tbody>
 </table>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createConfigForm = document.getElementById('createConfigForm');
+    const alertContainer = document.getElementById('alertContainer');
+    const createConfigBtn = document.getElementById('createConfigBtn');
+    const createBtnText = document.getElementById('createBtnText');
+    const createSpinner = document.getElementById('createSpinner');
+    
+    // Get the CSRF token from the cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    
+    // Show alert message
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        alertContainer.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 5000);
+    }
+    
+    // Show loading state
+    function showLoading(button, textSpan, spinnerSpan) {
+        button.disabled = true;
+        textSpan.style.display = 'none';
+        spinnerSpan.style.display = 'inline-block';
+    }
+    
+    // Reset button state
+    function resetButton(button, textSpan, spinnerSpan) {
+        button.disabled = false;
+        textSpan.style.display = 'inline-block';
+        spinnerSpan.style.display = 'none';
+    }
+    
+    // Create new config
+    createConfigForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(createConfigForm);
+        const csrfToken = getCookie('csrf_access_token');
+        
+        showLoading(createConfigBtn, createBtnText, createSpinner);
+        
+        fetch('/configs', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            resetButton(createConfigBtn, createBtnText, createSpinner);
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else if (data.success) {
+                showAlert(data.message, 'success');
+                window.location.href = `/configs/edit/${data.config.filename}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resetButton(createConfigBtn, createBtnText, createSpinner);
+            showAlert('An error occurred while creating the configuration.', 'danger');
+        });
+    });
+    
+    // Set default config
+    document.querySelectorAll('.set-default-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const filename = this.getAttribute('data-filename');
+            const csrfToken = getCookie('csrf_access_token');
+            
+            // Disable all set default buttons
+            document.querySelectorAll('.set-default-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+
+            fetch(`/configs/set_default/${filename}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Re-enable all set default buttons
+                document.querySelectorAll('.set-default-btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+                
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else if (data.success) {
+                    showAlert(data.message, 'success');
+                    
+                    // Update UI to reflect the new default config without page reload
+                    
+                    // Find the current default badge and hide it
+                    const currentDefaultBadge = document.querySelector('.default-badge:not([style*="display: none"])');
+                    if (currentDefaultBadge) {
+                        const currentDefaultCell = currentDefaultBadge.closest('.default-status-cell');
+                        const currentDefaultButton = currentDefaultCell.querySelector('.set-default-btn');
+                        
+                        // Hide the badge and show the button for the previous default
+                        currentDefaultBadge.style.display = 'none';
+                        if (currentDefaultButton) {
+                            currentDefaultButton.style.display = '';
+                        }
+                    }
+                    
+                    // Find the new default config cell and update it
+                    const newDefaultCell = document.querySelector(`.default-status-cell[data-filename="${filename}"]`);
+                    if (newDefaultCell) {
+                        const newDefaultBadge = newDefaultCell.querySelector('.default-badge');
+                        const newDefaultButton = newDefaultCell.querySelector('.set-default-btn');
+                        
+                        // Show the badge and hide the button for the new default
+                        if (newDefaultBadge) {
+                            newDefaultBadge.style.display = '';
+                        }
+                        if (newDefaultButton) {
+                            newDefaultButton.style.display = 'none';
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Re-enable all set default buttons
+                document.querySelectorAll('.set-default-btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+                showAlert('An error occurred while setting the default configuration.', 'danger');
+            });
+        });
+    });
+    
+    // Delete config
+    document.querySelectorAll('.delete-config-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            if (!confirm('Are you sure you want to delete this configuration?')) {
+                return;
+            }
+            
+            const filename = this.getAttribute('data-filename');
+            const csrfToken = getCookie('csrf_access_token');
+            const row = document.getElementById(`config-row-${filename}`);
+            
+            this.disabled = true;
+            
+            fetch(`/configs/delete/${filename}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    this.disabled = false;
+                    showAlert(data.error, 'danger');
+                } else if (data.success) {
+                    showAlert(data.message, 'success');
+                    // Remove the row from the table
+                    if (row) {
+                        row.remove();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.disabled = false;
+                showAlert('An error occurred while deleting the configuration.', 'danger');
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

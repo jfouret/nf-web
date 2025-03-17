@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import shutil
-from datetime import datetime
+from datetime import datetime, UTC
 from ...utils.file_utils import get_file_digest
 from flask import Flask
 from ... import models
@@ -42,8 +42,6 @@ class ConfigManager:
         Returns:
             Path to the config file
         """
-        if not filename.endswith('.config'):
-            filename += '.config'
         return self.configs_dir / filename
         
     def list_configs(self) -> List[Dict]:
@@ -85,10 +83,6 @@ class ConfigManager:
         Raises:
             ValueError: If config with filename already exists
         """
-        
-        if not filename.endswith('.config'):
-            filename += '.config'
-            
         # Check if config already exists
         if models.Config.query.filter_by(filename=filename).first():
             raise ValueError(f"Config with filename {filename} already exists")
@@ -126,7 +120,7 @@ class ConfigManager:
             f.write(content)
             
         # Update timestamp
-        config.updated_at = datetime.utcnow()
+        config.updated_at = datetime.now(UTC)
         self.db.session.commit()
         
     def delete_config(self, filename: str):
