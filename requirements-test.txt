@@ -6,3 +6,4 @@ pytest-flask
 pytest-cov
 pandas
 html5lib
+lxml
